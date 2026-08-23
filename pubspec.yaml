@@ -3,9 +3,13 @@ description: NoteNest - a local-first notes and checklists app that syncs throug
 publish_to: "none"
 version: 1.0.0+1
 
+# Developed and pinned against Flutter 3.24.5 (Dart 3.5.4).
+# Newer Flutter releases remove APIs used here (Color.withOpacity) and
+# discontinue flutter_markdown, so install 3.24.5 from:
+#   https://docs.flutter.dev/install/archive
 environment:
   sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.22.0"
+  flutter: ">=3.22.0 <3.27.0"
 
 dependencies:
   flutter:
