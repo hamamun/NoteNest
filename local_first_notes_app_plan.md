@@ -21,25 +21,40 @@ Works for desktop and mobile
 Suggests safety, organization, and personal storage
 ```
 
-Recommended identifiers:
+Final identifiers — DECIDED:
 
 ```text
 Display name: NoteNest
 Flutter project name: notenest
-Suggested package id: com.yourname.notenest
-Suggested GitHub repo name: notenest
+Package id / application id: com.notenest.notenest
+Windows window title: NoteNest
+Android app label: NoteNest
+GitHub repo name: NoteNest
 ```
+
+No placeholder remains. Use `com.notenest.notenest` everywhere:
+Android `applicationId`, Windows bundle identifier, and any future
+macOS/Linux packaging.
 
 ---
 
 ## Goal
 
-Build your own note-taking app that works on:
+Build your own note-taking app.
+
+Version 1 build targets — DECIDED:
 
 - Windows PC
+- Android
+
+Not built in Version 1:
+
 - macOS
 - Linux
-- Android
+
+The Flutter codebase stays portable, so macOS and Linux can be added later
+without a rewrite, but they are out of scope for Version 1. Do not spend
+Version 1 effort on macOS/Linux-specific packaging, file pickers, or testing.
 
 Main requirement:
 
@@ -61,6 +76,10 @@ Editor format: Markdown
 Sync target: GitHub private repository
 Authentication: Fine-grained GitHub Personal Access Token
 Secure token storage: flutter_secure_storage
+Version 1 platforms: Windows + Android only
+Export formats: PDF and TXT only
+Checklist checked-state matching: by line text
+Encryption: optional encrypted backup file only in v1
 ```
 
 ---
@@ -432,6 +451,100 @@ Recommended placement:
 ```text
 Desktop checklist View Mode: top item toolbar, near View/Edit toggle
 Mobile checklist View Mode: top bar beside Edit icon if space, otherwise first item in ⋮ menu
+```
+
+---
+
+### Checklist Checked-State Preservation — DECIDED (Text-Based)
+
+Checked state follows the LINE TEXT, not the line position.
+
+Core rule:
+
+```text
+Same text  -> keeps its checked state
+Changed text -> becomes unchecked
+Moved line (text unchanged) -> keeps its checked state
+New line -> unchecked
+Deleted line -> its checked state is discarded
+```
+
+Examples.
+
+Reorder keeps state:
+
+```text
+Before edit:      After edit:
+[x] Milk          [ ] Rice
+[ ] Rice          [x] Milk
+[ ] Tea           [ ] Tea
+
+Milk is still checked because the text "Milk" still exists.
+```
+
+Text edit clears state:
+
+```text
+Before edit:      After edit:
+[x] Milk          [ ] Milk 2L
+
+"Milk" no longer exists, "Milk 2L" is a new line -> unchecked.
+```
+
+Matching algorithm on save:
+
+```text
+1. Read old checklist_items into a map:
+     key   = normalized text
+     value = queue of checked flags, in old order
+2. Split new editor text into lines.
+3. For each non-empty new line, in order:
+     normalize the line text
+     if the map has a remaining entry for that text:
+        take one entry -> reuse its checked value
+     else:
+        checked = false
+4. Rewrite checklist_items from the new line list.
+```
+
+Normalization used for matching:
+
+```text
+Trim leading/trailing whitespace
+Collapse internal runs of whitespace to a single space
+Case-sensitive comparison
+```
+
+Reason for case-sensitive: "milk" and "Milk" are treated as a deliberate edit.
+
+Duplicate line handling:
+
+```text
+Duplicate identical lines are matched in order of appearance.
+
+Old: [x] Milk, [ ] Milk
+New: Milk, Milk
+Result: first Milk checked, second Milk unchecked.
+
+Old: [x] Milk, [ ] Milk
+New: Milk
+Result: the single Milk is checked (first available match wins).
+```
+
+Explicitly rejected alternative:
+
+```text
+Do NOT preserve checked state by line position/index.
+```
+
+Reason: position matching wrongly keeps a checkmark on a line whose
+text was completely replaced. Text matching is what the user asked for.
+
+Storage impact:
+
+```text
+checklist_items.text is the identity used for matching.
+checklist_items.sort_order only controls display order.
 ```
 
 ---
@@ -1194,11 +1307,8 @@ but old content may still exist in GitHub commit history.
 
 If notes may contain sensitive data, use client-side encryption before syncing to GitHub.
 
-Recommended future feature:
-
-```text
-Encrypted GitHub sync using AES-256-GCM
-```
+Encryption decision for this project is recorded in the section
+"Encryption Decision — Local Safe Defaults Now, Optional Vault Later".
 
 ---
 
@@ -1682,7 +1792,10 @@ View Mode:
   App renders every non-empty line as a checkbox item.
 ```
 
-For the MVP, checkbox state can be preserved mostly by line position. Later, a smarter diff can preserve checked state better when lines are edited or moved.
+Checked state is preserved by LINE TEXT, not by line position. See the section
+"Checklist Checked-State Preservation — DECIDED (Text-Based)" for the exact
+matching algorithm. Short version: unchanged text keeps its checkmark even if
+the line moves; edited text becomes unchecked.
 
 ---
 
@@ -2348,27 +2461,27 @@ Toolbar shows: Export / Download
 
 ---
 
-### Recommended Export Formats
+### Export Formats — DECIDED
 
-You asked for 3 formats and mentioned PDF and text.
-
-Recommended 3 formats:
+Final decision: only two export formats.
 
 ```text
 1. PDF
 2. Plain text (.txt)
-3. Markdown (.md)
 ```
 
-Markdown is recommended as the third format because the app already uses Markdown/text internally and it preserves note formatting better than plain text.
-
-Optional later formats:
+Markdown export is NOT part of the app.
 
 ```text
-HTML
-DOCX
-JSON backup export
+No .md export
+No HTML export
+No DOCX export
+No JSON export
 ```
+
+Note: Markdown is still used internally as the note body format and as the
+GitHub sync file format. That is sync storage, not a user-facing export option.
+The Export/Download menu must show exactly two choices: PDF and TXT.
 
 ---
 
@@ -2379,7 +2492,6 @@ If user selects one note/list:
 ```text
 PDF      -> one .pdf file
 Text     -> one .txt file
-Markdown -> one .md file
 ```
 
 Recommended filename:
@@ -2387,7 +2499,6 @@ Recommended filename:
 ```text
 Title - 2026-07-27.pdf
 Title - 2026-07-27.txt
-Title - 2026-07-27.md
 ```
 
 If title has unsafe filename characters, clean them.
@@ -2408,10 +2519,8 @@ Example:
 
 ```text
 selected-notes-export-2026-07-27.zip
-  Shopping List.md
   Shopping List.txt
   Shopping List.pdf
-  Meeting Note.md
   Meeting Note.txt
   Meeting Note.pdf
   images/
@@ -2491,43 +2600,42 @@ Export checklist without checkbox marks
 
 ---
 
-### Markdown Export Rules
+### Markdown Is Internal Only — Not An Export Format
 
-Markdown export should preserve formatting and metadata.
+Markdown is still used in two places:
 
-Note Markdown example:
-
-```markdown
----
-type: note
-title: Meeting Note
-created: 2026-07-27T10:00:00Z
-updated: 2026-07-27T10:20:00Z
-color: yellow
----
-
-# Meeting Note
-
-Body text here.
+```text
+1. Note body storage inside the local database
+2. One .md file per entry inside the GitHub sync repository
 ```
 
-Checklist Markdown example:
+Markdown is NOT offered to the user in the Export/Download menu.
+
+The GitHub sync file format stays as before:
 
 ```markdown
 ---
-type: checklist
-title: Shopping List
-created: 2026-07-27T10:00:00Z
-updated: 2026-07-27T10:20:00Z
-color: green
+id: note-id-1
+type: note
+title: My first note
+color: yellow
+created: 2026-07-26T10:20:00Z
+updated: 2026-07-26T10:25:00Z
+deleted: false
 ---
 
-# Shopping List
+This is the note body.
+```
 
+Checklist sync file body keeps checkbox syntax so the file stays readable:
+
+```markdown
 - [ ] Rice
 - [x] Milk
 - [ ] Tea
 ```
+
+Again: this is sync storage only. Export = PDF and TXT.
 
 ---
 
@@ -3450,6 +3558,109 @@ Then add advanced polish.
 
 ---
 
+## Encryption Decision — Local Safe Defaults Now, Optional Vault Later
+
+The user asked for whatever is easy AND good. This is the chosen answer.
+
+### What ships in Version 1
+
+```text
+1. Token stored only in flutter_secure_storage (OS keychain / DPAPI / Keystore)
+2. Private repository is required and verified
+3. Note bodies are NOT encrypted
+4. Optional encrypted backup file, off by default
+```
+
+Rule 1 — token security, mandatory:
+
+```text
+Never hardcode the token
+Never store the token in SQLite or a plain file
+Never write the token to logs or error messages
+Never include the token in exports or backups
+```
+
+Rule 2 — private repo check, mandatory:
+
+```text
+Test Connection must read the repository visibility.
+If the repository is public:
+   Refuse to enable sync
+   Show a clear error: "This repository is public. Use a private repository."
+```
+
+This is cheap to implement and prevents the single worst mistake.
+
+Rule 3 — note bodies stay plain Markdown in the repo.
+
+Reason:
+
+```text
+Plain .md files stay human-readable on github.com
+Plain .md files stay recoverable if the app is lost
+Plain .md files keep the anti-resurrection sync logic simple
+Per-note encryption adds key management and permanent data-loss risk
+```
+
+Rule 4 — optional encrypted backup, the "easy and good" part:
+
+```text
+Setting: Encrypt backup files  [Off by default]
+If On, the user sets a backup passphrase.
+The backup .zip is encrypted before upload.
+Uploaded filename becomes: notenest-backup-2026-08-23.zip.enc
+```
+
+Recommended scheme:
+
+```text
+Key derivation: PBKDF2-HMAC-SHA256, 200000 iterations, 16-byte random salt
+Cipher:         AES-256-GCM
+Nonce:          12 random bytes per file
+File layout:    magic "NNBK1" | salt | nonce | ciphertext | GCM tag
+```
+
+Why this is the right amount of work:
+
+```text
+One file, one passphrase, one code path
+No per-note keys
+No key rotation
+No effect on sync or conflict logic
+Protects the file that actually contains everything
+```
+
+Mandatory warnings in the UI:
+
+```text
+"If you lose this passphrase, the backup cannot be recovered."
+"Encryption applies to backups only. Synced notes are stored as plain text."
+```
+
+Passphrase storage:
+
+```text
+Store the backup passphrase in flutter_secure_storage, same as the token.
+Never store it in SQLite.
+```
+
+### What is deferred
+
+```text
+Full encrypted sync of note files  -> Version 3
+Encrypted local database (SQLCipher) -> Version 3
+```
+
+Deferred-but-honest privacy note that must stay visible in Settings:
+
+```text
+Deleting a note removes it from the app and from the latest synced files,
+but old content may still exist in GitHub commit history.
+Do not store passwords or highly sensitive data in NoteNest v1.
+```
+
+---
+
 ## Recommended MVP Features
 
 Start with a simple but solid version.
@@ -3475,6 +3686,7 @@ Start with a simple but solid version.
 - Store notes/lists in SQLite using Drift
 - Markdown editor for notes
 - Checklist View Mode with checkbox visibility toggle On/Off
+- Checklist checked-state preserved by line text, not line position
 - View/Edit mode toggle
 - Home card display modes: Grid/Masonry, List, Compact
 - Copy selected text in View Mode
@@ -3498,9 +3710,12 @@ Start with a simple but solid version.
 - Select single/multiple notes/lists for export/download
 - Export/download as PDF
 - Export/download as plain text `.txt`
-- Export/download as Markdown `.md`
+- Only these two export formats; no Markdown/HTML/DOCX/JSON export
 - Conflict copy handling
-- GitHub token saved securely
+- GitHub token saved securely in flutter_secure_storage
+- Private repository verified before sync can be enabled
+- Optional encrypted backup file with passphrase, off by default
+- Build targets: Windows desktop and Android only
 
 ### Version 2
 
@@ -3514,7 +3729,8 @@ Start with a simple but solid version.
 
 ### Version 3
 
-- Encrypted GitHub sync
+- Encrypted GitHub sync of note files
+- Encrypted local database (SQLCipher)
 - Better text merge
 - Note history
 - Background sync
@@ -3525,7 +3741,7 @@ Start with a simple but solid version.
 ## Recommended App Structure
 
 ```text
-my_notes_app/
+notenest/
   lib/
     main.dart
 

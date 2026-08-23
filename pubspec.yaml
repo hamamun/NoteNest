@@ -1,0 +1,70 @@
+name: notenest
+description: NoteNest - a local-first notes and checklists app that syncs through a private GitHub repository.
+publish_to: "none"
+version: 1.0.0+1
+
+# Works with any Flutter 3.22 or newer, including the current stable.
+# Version-sensitive APIs were deliberately avoided:
+#   * Color.withOpacity / withValues  -> lib/core/color_x.dart (withAlpha)
+#   * flutter_markdown (discontinued) -> lib/features/item/widgets/simple_markdown.dart
+#   * CardTheme / DialogTheme types   -> not set in ThemeData
+#   * RadioListTile group API         -> plain ListTile
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Local database (D-01..D-10) ---
+  drift: ">=2.16.0 <3.0.0"
+  sqlite3: ">=2.4.0 <3.0.0"
+  sqlite3_flutter_libs: ">=0.5.20 <0.6.0"
+  path_provider: ">=2.1.0 <3.0.0"
+  path: ">=1.8.0 <2.0.0"
+
+  # --- Security (SEC-07, B-15) ---
+  flutter_secure_storage: ">=9.0.0 <11.0.0"
+  cryptography: ">=2.5.0 <3.0.0"
+
+  # --- Sync (G-06) ---
+  http: ">=1.1.0 <2.0.0"
+  connectivity_plus: ">=6.0.0 <8.0.0"
+
+  # --- Content ---
+  url_launcher: ">=6.2.0 <7.0.0"
+
+  # --- UI ---
+  flutter_staggered_grid_view: ">=0.7.0 <1.0.0"
+  provider: ">=6.1.0 <7.0.0"
+  intl: ">=0.18.0 <2.0.0"
+
+  # --- Images (IMG-01..IMG-13) ---
+  image_picker: ">=1.0.0 <2.0.0"
+  file_picker: ">=8.0.0 <11.0.0"
+  image: ">=4.1.0 <5.0.0"
+
+  # --- Export & backup (E-01..E-14, B-01..B-18) ---
+  pdf: ">=3.10.0 <4.0.0"
+  archive: ">=3.4.0 <4.0.0"
+
+  # --- Device identity (P-07) ---
+  device_info_plus: ">=10.0.0 <13.0.0"
+  package_info_plus: ">=5.0.0 <10.0.0"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ">=3.0.0 <7.0.0"
+  build_runner: ">=2.4.0 <3.0.0"
+  drift_dev: ">=2.16.0 <3.0.0"
+
+flutter:
+  uses-material-design: true
+  # To get Bengali, Hindi, Arabic or CJK text in exported PDFs, drop the two
+  # font files into assets/fonts/ and uncomment these four lines:
+  # fonts:
+  #   - family: NotoSans
+  #     fonts:
+  #       - asset: assets/fonts/NotoSans-Regular.ttf

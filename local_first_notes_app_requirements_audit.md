@@ -11,13 +11,13 @@ Note = notes and lists
 Nest = safe local home for data on each device
 ```
 
-Recommended identifiers:
+Final identifiers (locked):
 
 ```text
 Display name: NoteNest
 Flutter project name: notenest
-Suggested package id: com.yourname.notenest
-Suggested GitHub repo name: notenest
+Package id: com.notenest.notenest
+GitHub repo name: NoteNest
 ```
 
 ---
@@ -61,20 +61,18 @@ Token storage: flutter_secure_storage
 Offline support: Full local-first behavior
 ```
 
-Supported target platforms:
+Version 1 target platforms (locked):
 
 ```text
 Windows
-macOS
-Linux
 Android
 ```
 
-Recommended first development targets:
+Out of scope for Version 1:
 
 ```text
-Windows + Android first
-macOS/Linux later
+macOS
+Linux
 ```
 
 ---
@@ -164,6 +162,7 @@ On = show checkboxes before each line
 Off = hide checkboxes and show plain lines
 Checked states are preserved while hidden
 Recommended field: entries.checkboxes_visible_in_view
+Checked state is matched by line TEXT, never by line position
 ```
 
 ---
@@ -427,18 +426,18 @@ User can select multiple notes/lists.
 User can export/download.
 ```
 
-Formats included:
+Formats included (locked):
 
 ```text
 PDF
 Plain text .txt
-Markdown .md
 ```
 
-Note:
+Rule:
 
 ```text
-The third format was assumed as Markdown because the user mentioned 3 formats but explicitly named PDF and text only.
+Exactly two export formats. No Markdown, HTML, DOCX, or JSON export.
+Markdown remains internal only: note body storage and GitHub sync files.
 ```
 
 ---
@@ -606,6 +605,37 @@ No video upload.
 No PDF/document/generic file attachments.
 ```
 
+### Checklist Checked-State Rule
+
+```text
+Checked state is matched by line text.
+Same text keeps its checkmark, even if the line moved.
+Any text change makes the line unchecked.
+Never match by line position.
+```
+
+### Export Format Rule
+
+```text
+Exactly two export formats: PDF and TXT.
+Markdown is internal storage/sync only, never an export option.
+```
+
+### Platform Scope Rule
+
+```text
+Version 1 builds Windows and Android only.
+```
+
+### Encryption Rule
+
+```text
+Sync is enabled only for a verified PRIVATE repository.
+Note files sync as plain Markdown in v1.
+Backup encryption is optional, off by default, AES-256-GCM with PBKDF2.
+Backup passphrase lives in flutter_secure_storage, never in SQLite.
+```
+
 ### Checklist View Toggle Rule
 
 ```text
@@ -615,132 +645,146 @@ Normal notes do not show this toggle.
 
 ---
 
-## Further Changes Recommended Before Coding
+## Final Decisions — All Locked
 
-No major missing function was found.
+All five open decisions are now answered. Nothing below is optional.
 
-However, these small decisions should be finalized before actual coding starts.
-
-### Decision 1: App Name — Completed
-
-Chosen project name:
+### Decision 1: App Name — LOCKED
 
 ```text
-NoteNest
-```
-
-Use this for:
-
-```text
+Display name: NoteNest
 Flutter project name: notenest
-Package/app display name: NoteNest
-Window title: NoteNest
-Android app name: NoteNest
-Suggested GitHub repo name: notenest
+Package id: com.notenest.notenest
+Windows title: NoteNest
+Android label: NoteNest
+GitHub repo name: NoteNest
 ```
 
-Suggested package id placeholder:
-
-```text
-com.yourname.notenest
-```
-
-Replace `yourname` later with your preferred developer/company identifier.
+No `yourname` placeholder remains anywhere.
 
 ---
 
-### Decision 2: Third Export Format Confirmation
-
-Current plan uses:
+### Decision 2: Export Formats — LOCKED
 
 ```text
 PDF
-TXT
-Markdown
+Plain text .txt
 ```
 
-Please confirm whether Markdown `.md` is acceptable as the third format.
-
-Alternative third format could be:
+Only two. The Export menu must not show a third option.
 
 ```text
-HTML
-DOCX
-JSON
+No Markdown export
+No HTML export
+No DOCX export
+No JSON export
 ```
 
-Recommended: Markdown.
+Markdown is still used internally for note bodies and for the one-file-per-note
+GitHub sync format. That is storage, not an export feature.
+
+Multi-item export still produces one .zip containing the chosen format files.
 
 ---
 
-### Decision 3: First Build Target
-
-Recommended first targets:
+### Decision 3: Build Targets — LOCKED
 
 ```text
-Windows desktop
-Android mobile
+Version 1: Windows desktop + Android
 ```
-
-Reason:
 
 ```text
-This proves both PC and mobile behavior early.
+macOS: not in Version 1
+Linux:  not in Version 1
 ```
 
-macOS and Linux can be built later from the same Flutter codebase.
+Keep the code portable, but do not spend Version 1 time on macOS/Linux
+packaging, file pickers, or testing.
 
 ---
 
-### Decision 4: Checklist Checked-State Preservation
+### Decision 4: Checklist Checked-State Preservation — LOCKED (Text-Based)
 
-Because Edit Mode is plain multiline text, the app must decide how checked states stay attached to lines.
-
-Recommended MVP:
+Checked state follows the LINE TEXT, not the line position.
 
 ```text
-Preserve checked state by line position.
+Text unchanged            -> checkmark is kept
+Text changed in any way   -> line becomes unchecked
+Line moved, text same     -> checkmark is kept
+New line                  -> unchecked
+Deleted line              -> state discarded
 ```
 
-Example:
+Matching algorithm on save:
 
 ```text
-Line 1 checked state stays with line 1.
-Line 2 checked state stays with line 2.
+1. Build a map from old items: normalized text -> queue of checked flags
+2. Split the editor text into non-empty lines
+3. For each new line in order:
+     if the map still has an entry for that text -> take it, reuse checked
+     else -> checked = false
+4. Rewrite checklist_items in the new line order
 ```
 
-Known limitation:
+Normalization:
 
 ```text
-If user heavily reorders lines in Edit Mode, checked states may not always follow the exact item perfectly.
+Trim ends
+Collapse internal whitespace runs to one space
+Case-sensitive
 ```
 
-Better later:
+Duplicates are matched in order of appearance.
+
+Explicitly rejected:
 
 ```text
-Smarter line matching by text + position.
-```
-
-Recommended for MVP:
-
-```text
-Start with line position.
-Improve later if needed.
+Position/index-based matching
 ```
 
 ---
 
-### Decision 5: Encryption
+### Decision 5: Encryption — LOCKED (Easy + Good Option Chosen)
 
-Current plan says encryption is a future feature.
+Version 1 does the cheap, high-value security work and skips the risky part.
 
-If notes are sensitive, encryption should be added before serious GitHub use.
-
-MVP recommendation:
+Included in Version 1:
 
 ```text
-Start without encryption if this is personal/non-sensitive.
-Add encryption later.
+Token only in flutter_secure_storage
+Token never in SQLite, plain files, logs, exports, or backups
+Test Connection must verify the repo is PRIVATE, and refuse to enable sync if public
+Optional encrypted backup file, OFF by default
+```
+
+Encrypted backup scheme when enabled:
+
+```text
+Key derivation: PBKDF2-HMAC-SHA256, 200000 iterations, 16-byte random salt
+Cipher:         AES-256-GCM, 12-byte random nonce
+Output file:    notenest-backup-YYYY-MM-DD.zip.enc
+Layout:         magic "NNBK1" | salt | nonce | ciphertext | tag
+Passphrase:     stored in flutter_secure_storage, never in SQLite
+```
+
+Not included in Version 1:
+
+```text
+Encryption of synced note .md files
+Encrypted local database (SQLCipher)
+```
+
+Reason: plain .md sync files stay readable on github.com, stay recoverable
+without the app, and keep the tombstone/anti-resurrection logic simple.
+Per-note encryption adds key management and permanent data-loss risk.
+
+Mandatory UI warnings:
+
+```text
+"If you lose this passphrase, the backup cannot be recovered."
+"Encryption applies to backups only. Synced notes are stored as plain text."
+"Deleted content may remain in GitHub commit history."
+"Do not store passwords or highly sensitive data in NoteNest v1."
 ```
 
 ---
@@ -749,12 +793,15 @@ Add encryption later.
 
 The plan is large, but it is complete enough to start development.
 
+All five open decisions are now answered and locked.
+
 Recommended next step:
 
 ```text
 Do not add more features now.
-Freeze Version 1 scope.
-Start building MVP in Flutter.
+Version 1 scope is frozen.
+Scaffold the Flutter project: notenest / com.notenest.notenest
+Build Windows + Android, local-only first, sync after.
 ```
 
 MVP should focus on:
