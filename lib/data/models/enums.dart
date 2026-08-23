@@ -1,8 +1,8 @@
-/// Shared enumerations for NoteNest.
-///
-/// Every enum stores itself as a stable string so the value can be written to
-/// SQLite and to GitHub front matter without breaking when the enum order
-/// changes in a later version.
+// Shared enumerations for NoteNest.
+//
+// Every enum stores itself as a stable string so the value can be written to
+// SQLite and to GitHub front matter without breaking when the enum order
+// changes in a later version.
 
 /// N-01: the app has exactly two content types.
 enum EntryType {

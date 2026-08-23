@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../app/icons.dart';
 import '../../app/services.dart';
 import '../../core/time.dart';
-import '../../data/models/enums.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/repositories/sync_config_repository.dart';
 import '../sync/sync_controller.dart';

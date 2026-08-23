@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +15,6 @@ import '../../data/db/database.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/checklist_matcher.dart';
 import '../../data/repositories/entry_repository.dart';
-import '../../data/repositories/image_store.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../export/export_dialog.dart';
 import 'widgets/image_strip.dart';
@@ -630,7 +628,9 @@ class _ItemPageState extends State<ItemPage> {
       return;
     }
 
-    if (bytes == null || name == null) return;
+    // `name` is provably non-null here (both picker branches return early when
+    // it couldn't be set); only `bytes` can legitimately be null.
+    if (bytes == null) return;
 
     // IMG-02: validate again after picking — the filter is not enough.
     final validation = services.images.validate(name, bytes);

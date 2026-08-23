@@ -63,7 +63,11 @@ class Entries extends Table {
 class ChecklistItems extends Table {
   TextColumn get id => text()();
   TextColumn get entryId => text()();
-  TextColumn get text => text()();
+
+  /// Dart-side name is [itemText] because a getter named `text` would collide
+  /// with the inherited `Table.text()` column builder. The SQLite column
+  /// itself stays `text`, so existing databases need no migration.
+  TextColumn get itemText => text().named('text')();
   BoolColumn get checked => boolean().withDefault(const Constant(false))();
   IntColumn get sortOrder => integer()();
   IntColumn get createdAt => integer()();

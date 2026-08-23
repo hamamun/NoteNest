@@ -7,8 +7,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SecureStore {
   SecureStore([FlutterSecureStorage? storage])
       : _storage = storage ??
+            // AndroidOptions must not set `encryptedSharedPreferences`: the
+            // Jetpack Security library is deprecated by Google and the plugin
+            // auto-migrates existing data to its custom ciphers.
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
               wOptions: WindowsOptions(),
             );
 

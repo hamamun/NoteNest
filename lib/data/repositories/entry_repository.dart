@@ -190,7 +190,7 @@ class EntryRepository {
           ..where((t) => t.entryId.equals(entryId) & t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
         .get();
-    return rows.map((r) => ChecklistLine(r.text, r.checked)).toList();
+    return rows.map((r) => ChecklistLine(r.itemText, r.checked)).toList();
   }
 
   Future<List<EntryImage>> imagesFor(String entryId) =>
@@ -321,7 +321,7 @@ class EntryRepository {
             ChecklistItemsCompanion.insert(
               id: Ulid.generate(),
               entryId: entryId,
-              text: lines[i].text,
+              itemText: lines[i].text,
               checked: Value(lines[i].checked),
               sortOrder: i,
               createdAt: now,
