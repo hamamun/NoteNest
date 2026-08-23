@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 
 import '../db/database.dart';

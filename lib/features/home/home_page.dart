@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../app/color_picker.dart';
 import '../../app/icons.dart';
 import '../../app/services.dart';
-import '../../app/theme.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
