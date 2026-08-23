@@ -74,17 +74,6 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: isDark ? const Color(0xFF17191C) : const Color(0xFFF7F8FA),
       visualDensity: VisualDensity.standard,
-      cardTheme: CardTheme(
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: isDark ? const Color(0x1FFFFFFF) : const Color(0x14000000),
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -104,9 +93,6 @@ class AppTheme {
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         side: BorderSide.none,
-      ),
-      dialogTheme: DialogTheme(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         shape: RoundedRectangleBorder(

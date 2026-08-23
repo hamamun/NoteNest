@@ -90,7 +90,7 @@ class _EntryCardState extends State<EntryCard> {
                 border: Border.all(
                   color: widget.selected
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      : theme.colorScheme.outlineVariant.withOpacity(0.5),
                   width: widget.selected ? 2 : 1,
                 ),
               ),
@@ -156,7 +156,7 @@ class _EntryCardState extends State<EntryCard> {
             ),
           ),
           if (widget.bundle.entry.isPinned)
-            Icon(AppIcons.pin, size: 15, color: foreground.withValues(alpha: 0.7)),
+            Icon(AppIcons.pin, size: 15, color: foreground.withOpacity(0.7)),
         ],
       ),
     );
@@ -173,7 +173,7 @@ class _EntryCardState extends State<EntryCard> {
           'Empty list',
           style: TextStyle(
             fontSize: compact ? 12 : 13,
-            color: foreground.withValues(alpha: 0.55),
+            color: foreground.withOpacity(0.55),
             fontStyle: FontStyle.italic,
           ),
         );
@@ -197,7 +197,7 @@ class _EntryCardState extends State<EntryCard> {
                         ? Icons.check_box_outlined
                         : Icons.check_box_outline_blank,
                     size: compact ? 13 : 15,
-                    color: foreground.withValues(alpha: 0.7),
+                    color: foreground.withOpacity(0.7),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -207,9 +207,7 @@ class _EntryCardState extends State<EntryCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: compact ? 12 : 13,
-                        color: foreground.withValues(
-                          alpha: line.checked ? 0.5 : 0.85,
-                        ),
+                        color: foreground.withOpacity(line.checked ? 0.5 : 0.85),
                         decoration: line.checked
                             ? TextDecoration.lineThrough
                             : TextDecoration.none,
@@ -227,7 +225,7 @@ class _EntryCardState extends State<EntryCard> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: foreground.withValues(alpha: 0.6),
+                  color: foreground.withOpacity(0.6),
                 ),
               ),
             ),
@@ -242,7 +240,7 @@ class _EntryCardState extends State<EntryCard> {
           'Empty note',
           style: TextStyle(
             fontSize: compact ? 12 : 13,
-            color: foreground.withValues(alpha: 0.55),
+            color: foreground.withOpacity(0.55),
             fontStyle: FontStyle.italic,
           ),
         );
@@ -257,7 +255,7 @@ class _EntryCardState extends State<EntryCard> {
       style: TextStyle(
         fontSize: compact ? 12 : 13,
         height: 1.35,
-        color: foreground.withValues(alpha: 0.85),
+        color: foreground.withOpacity(0.85),
       ),
     );
   }
@@ -274,7 +272,7 @@ class _EntryCardState extends State<EntryCard> {
               (tag) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: foreground.withValues(alpha: 0.10),
+                  color: foreground.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -306,18 +304,18 @@ class _EntryCardState extends State<EntryCard> {
     return Row(
       children: [
         if (conflict) ...[
-          Icon(AppIcons.conflict, size: 13, color: foreground.withValues(alpha: 0.8)),
+          Icon(AppIcons.conflict, size: 13, color: foreground.withOpacity(0.8)),
           const SizedBox(width: 4),
           Text(
             'Conflict copy',
-            style: TextStyle(fontSize: 11, color: foreground.withValues(alpha: 0.8)),
+            style: TextStyle(fontSize: 11, color: foreground.withOpacity(0.8)),
           ),
           const Spacer(),
         ],
         if (!conflict) const Spacer(),
         Text(
           AppTime.relative(widget.bundle.entry.updatedAt),
-          style: TextStyle(fontSize: 11, color: foreground.withValues(alpha: 0.55)),
+          style: TextStyle(fontSize: 11, color: foreground.withOpacity(0.55)),
         ),
       ],
     );
@@ -381,7 +379,7 @@ class _EntryCardState extends State<EntryCard> {
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(6),
-            child: Icon(icon, size: 17, color: foreground.withValues(alpha: 0.75)),
+            child: Icon(icon, size: 17, color: foreground.withOpacity(0.75)),
           ),
         ),
       ),

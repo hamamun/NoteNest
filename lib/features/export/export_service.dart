@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -72,7 +74,7 @@ class ExportService {
       format.extension,
     );
     final bytes = switch (format) {
-      ExportFormat.txt => Uint8List.fromList(buildTxt(bundle).codeUnits),
+      ExportFormat.txt => Uint8List.fromList(utf8.encode(buildTxt(bundle))),
       ExportFormat.pdf => await buildPdf([bundle]),
     };
     return ExportPayload(name, bytes);
@@ -106,7 +108,7 @@ class ExportService {
           bundle.entry.updatedAt,
           '.txt',
         ));
-        final data = Uint8List.fromList(buildTxt(bundle).codeUnits);
+        final data = Uint8List.fromList(utf8.encode(buildTxt(bundle)));
         archive.addFile(ArchiveFile(name, data.length, data));
       }
       if (formats.contains(ExportFormat.pdf)) {
@@ -171,18 +173,30 @@ class ExportService {
   Future<Uint8List> buildPdf(List<EntryBundle> bundles) async {
     final doc = pw.Document(title: 'NoteNest export');
 
-    // Unicode-capable font so checklists, accents and non-latin scripts do
-    // not turn into boxes. Falls back to Helvetica if unavailable.
+    // E-14 says export must work offline, so font loading is best-effort and
+    // never blocks:
+    //   1. a bundled asset, if the user added one (see README — this is how
+    //      you get Bengali, Hindi, Arabic or CJK text in PDFs)
+    //   2. Google Fonts, when online
+    //   3. the built-in Helvetica, which covers Latin text
     pw.Font? regular;
     pw.Font? bold;
+
     try {
-      regular = await PdfGoogleFonts.notoSansRegular();
-      bold = await PdfGoogleFonts.notoSansBold();
-    } catch (e) {
-      AppLog.warn('export', 'font download unavailable, using built-ins: $e');
+      regular = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
+      bold = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'));
+    } catch (_) {
+      try {
+        regular = await PdfGoogleFonts.notoSansRegular();
+        bold = await PdfGoogleFonts.notoSansBold();
+      } catch (e) {
+        AppLog.info('export', 'using built-in PDF font (offline, Latin only)');
+      }
     }
 
-    final theme = pw.ThemeData.withFont(base: regular, bold: bold);
+    final theme = regular != null
+        ? pw.ThemeData.withFont(base: regular, bold: bold)
+        : pw.ThemeData.base();
 
     for (final bundle in bundles) {
       final images = <pw.MemoryImage>[];
@@ -273,7 +287,11 @@ class ExportService {
     );
   }
 
-  /// E-08: checklists render with ballot-box glyphs.
+  /// E-08: checkboxes are DRAWN, not typed.
+  ///
+  /// Using the ballot-box characters would depend on the PDF font carrying
+  /// those glyphs; with the built-in Helvetica they render as blanks. A small
+  /// bordered square always works.
   List<pw.Widget> _pdfChecklist(EntryBundle bundle) {
     if (bundle.lines.isEmpty) {
       return [
@@ -284,13 +302,31 @@ class ExportService {
     return bundle.lines
         .map(
           (line) => pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 5),
+            padding: const pw.EdgeInsets.only(bottom: 6),
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  line.checked ? '\u2611 ' : '\u2610 ',
-                  style: const pw.TextStyle(fontSize: 12),
+                pw.Container(
+                  width: 10,
+                  height: 10,
+                  margin: const pw.EdgeInsets.only(top: 2, right: 8),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey700, width: 0.8),
+                    borderRadius: pw.BorderRadius.circular(2),
+                    color: line.checked ? PdfColors.grey700 : PdfColors.white,
+                  ),
+                  child: line.checked
+                      ? pw.Center(
+                          child: pw.Text(
+                            'X',
+                            style: pw.TextStyle(
+                              fontSize: 7,
+                              color: PdfColors.white,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
                 pw.Expanded(
                   child: pw.Text(

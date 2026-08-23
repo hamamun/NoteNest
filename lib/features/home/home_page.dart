@@ -202,10 +202,6 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0),
-        child: Container(),
-      ),
     );
   }
 

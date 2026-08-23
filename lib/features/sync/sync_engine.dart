@@ -97,7 +97,7 @@ class SyncEngine {
     final result = SyncResult();
 
     try {
-      AppLog.info('sync', 'start');
+      AppLog.info('sync', 'start (device $_deviceId)');
 
       // ---- X-03 step 2 + 3: tombstones FIRST, applied before any upload ----
       final remoteTombstones = await _fetchRemoteTombstones(client);
