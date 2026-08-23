@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../../core/logging.dart';
 import '../../core/time.dart';
@@ -186,12 +185,7 @@ class ExportService {
       regular = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
       bold = pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'));
     } catch (_) {
-      try {
-        regular = await PdfGoogleFonts.notoSansRegular();
-        bold = await PdfGoogleFonts.notoSansBold();
-      } catch (e) {
-        AppLog.info('export', 'using built-in PDF font (offline, Latin only)');
-      }
+      AppLog.info('export', 'using the built-in PDF font (Latin script only)');
     }
 
     final theme = regular != null
@@ -345,12 +339,6 @@ class ExportService {
           ),
         )
         .toList();
-  }
-
-  /// Convenience for the "print / share as PDF" action on desktop.
-  Future<void> printBundle(EntryBundle bundle) async {
-    final bytes = await buildPdf([bundle]);
-    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   Future<List<EntryBundle>> bundlesFor(List<String> ids) =>

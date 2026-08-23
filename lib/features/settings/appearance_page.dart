@@ -170,12 +170,16 @@ class AppearancePage extends StatelessWidget {
               Text('Sort order', style: theme.textTheme.titleMedium),
               const SizedBox(height: 10),
               for (final mode in SortMode.values)
-                RadioListTile<SortMode>(
-                  value: mode,
-                  groupValue: settings.sortMode,
-                  onChanged: (value) {
-                    if (value != null) settings.setSortMode(value);
-                  },
+                ListTile(
+                  onTap: () => settings.setSortMode(mode),
+                  leading: Icon(
+                    settings.sortMode == mode
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: settings.sortMode == mode
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
+                  ),
                   title: Text(mode.label),
                   subtitle: mode == SortMode.recentlyViewed
                       ? const Text('This device only — never synced')

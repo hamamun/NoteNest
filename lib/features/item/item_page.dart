@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +21,7 @@ import '../../data/repositories/settings_repository.dart';
 import '../export/export_dialog.dart';
 import 'widgets/image_strip.dart';
 import 'widgets/linkified_text.dart';
+import 'widgets/simple_markdown.dart';
 
 /// U-17..U-20: the open item screen.
 ///
@@ -423,31 +423,10 @@ class _ItemPageState extends State<ItemPage> {
       );
     }
 
-    return MarkdownBody(
+    return SimpleMarkdown(
       data: body,
-      selectable: true,
-      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-        p: style,
-        listBullet: style,
-        h1: style.copyWith(fontSize: style.fontSize! * 1.6, fontWeight: FontWeight.bold),
-        h2: style.copyWith(fontSize: style.fontSize! * 1.4, fontWeight: FontWeight.bold),
-        h3: style.copyWith(fontSize: style.fontSize! * 1.2, fontWeight: FontWeight.bold),
-        code: style.copyWith(
-          fontFamily: 'monospace',
-          fontSize: style.fontSize! * 0.9,
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        ),
-        a: style.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.underline,
-        ),
-      ),
-      // SET-07/SET-08: taps only navigate when the setting is on.
-      onTapLink: settings.clickableUrls
-          ? (text, href, title) {
-              if (href != null) LinkifiedText.openUrl(context, href);
-            }
-          : null,
+      baseStyle: style,
+      clickableUrls: settings.clickableUrls,
     );
   }
 
