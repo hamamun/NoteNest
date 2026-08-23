@@ -1,0 +1,61 @@
+name: notenest
+description: NoteNest - a local-first notes and checklists app that syncs through a private GitHub repository.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Local database (D-01..D-10) ---
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.20
+  path_provider: ^2.1.3
+  path: ^1.9.0
+
+  # --- Security (SEC-07, B-15) ---
+  flutter_secure_storage: ^9.2.2
+  cryptography: ^2.7.0
+
+  # --- Sync (G-06) ---
+  http: ^1.2.1
+  connectivity_plus: ^6.0.3
+
+  # --- Content rendering ---
+  flutter_markdown: ^0.7.1
+  markdown: ^7.2.2
+  url_launcher: ^6.2.6
+
+  # --- UI ---
+  flutter_staggered_grid_view: ^0.7.0
+  provider: ^6.1.2
+  intl: ^0.19.0
+
+  # --- Images (IMG-01..IMG-13) ---
+  image_picker: ^1.1.1
+  file_picker: ^8.0.3
+  image: ^4.1.7
+
+  # --- Export & backup (E-01..E-14, B-01..B-18) ---
+  pdf: ^3.10.8
+  printing: ^5.12.0
+  archive: ^3.4.10
+  share_plus: ^9.0.0
+
+  # --- Device identity (P-07) ---
+  device_info_plus: ^10.1.0
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+  build_runner: ^2.4.9
+  drift_dev: ^2.18.0
+
+flutter:
+  uses-material-design: true
