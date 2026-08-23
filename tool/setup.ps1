@@ -50,6 +50,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 Step "Analyzing"
 flutter analyze
+if ($LASTEXITCODE -ne 0) { Write-Host "  (analyzer reported issues - review above)" -ForegroundColor Yellow }
 
 Step "Running tests"
 flutter test

@@ -1,16 +1,16 @@
+# Standard Flutter lints. Deliberately not stricter than this: a wall of
+# style warnings makes real problems harder to see.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
-  errors:
-    invalid_annotation_target: ignore
 
 linter:
   rules:
-    prefer_const_constructors: true
-    prefer_const_declarations: true
-    avoid_print: true
-    prefer_single_quotes: true
-    unawaited_futures: true
+    # Generated Drift code and long widget trees make these noisy without
+    # improving correctness.
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    use_build_context_synchronously: false

@@ -24,10 +24,35 @@ class LinkifiedText extends StatelessWidget {
   final TextAlign? textAlign;
 
   /// Matches http/https URLs and bare www. hosts.
+  ///
+  /// Deliberately permissive, then tightened by [_trimTrailingPunctuation]:
+  /// getting "see https://example.com." right matters more than a clever
+  /// single-pass pattern.
   static final RegExp urlPattern = RegExp(
-    r'((?:https?://|www\.)[^\s<>\[\]()"' "'" r']+)',
+    r'(?:https?://|www\.)[^\s<>]+',
     caseSensitive: false,
   );
+
+  /// Trailing punctuation almost always belongs to the sentence, not the URL.
+  /// Closing brackets are only dropped when unbalanced, so
+  /// `https://en.wikipedia.org/wiki/Foo_(bar)` survives intact.
+  static String _trimTrailingPunctuation(String url) {
+    var end = url.length;
+    while (end > 0) {
+      final char = url[end - 1];
+      if ('.,;:!?"\''.contains(char)) {
+        end--;
+      } else if (char == ')' || char == ']' || char == '}') {
+        final open = char == ')' ? '(' : (char == ']' ? '[' : '{');
+        final candidate = url.substring(0, end);
+        if (candidate.split(open).length > candidate.split(char).length) break;
+        end--;
+      } else {
+        break;
+      }
+    }
+    return url.substring(0, end);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,19 +71,25 @@ class LinkifiedText extends StatelessWidget {
       if (match.start > index) {
         spans.add(TextSpan(text: text.substring(index, match.start)));
       }
+
       final raw = match.group(0)!;
+      final url = _trimTrailingPunctuation(raw);
+      final tail = raw.substring(url.length);
+
       spans.add(
         TextSpan(
-          text: raw,
+          text: url,
           style: baseStyle?.copyWith(
             color: theme.colorScheme.primary,
             decoration: TextDecoration.underline,
             decorationColor: theme.colorScheme.primary,
           ),
           recognizer: TapGestureRecognizer()
-            ..onTap = () => openUrl(context, raw),
+            ..onTap = () => openUrl(context, url),
         ),
       );
+      if (tail.isNotEmpty) spans.add(TextSpan(text: tail));
+
       index = match.end;
     }
     if (index < text.length) {

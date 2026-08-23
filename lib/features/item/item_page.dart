@@ -13,6 +13,7 @@ import '../../app/icons.dart';
 import '../../app/services.dart';
 import '../../app/theme.dart';
 import '../../core/time.dart';
+import '../../data/db/database.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/checklist_matcher.dart';
 import '../../data/repositories/entry_repository.dart';
@@ -707,15 +708,15 @@ class _ItemPageState extends State<ItemPage> {
                 children: [
                   Text('Tags', style: Theme.of(builderContext).textTheme.titleMedium),
                   const SizedBox(height: 12),
-                  StreamBuilder<List<dynamic>>(
+                  StreamBuilder<List<Tag>>(
                     stream: services.entries.watchTags(),
                     builder: (context, snapshot) {
-                      final all = snapshot.data ?? const [];
-                      return FutureBuilder<List<dynamic>>(
+                      final all = snapshot.data ?? const <Tag>[];
+                      return FutureBuilder<List<Tag>>(
                         future: services.entries.tagsFor(bundle.entry.id),
                         builder: (context, mineSnapshot) {
-                          final mine = (mineSnapshot.data ?? const [])
-                              .map((t) => t.id as String)
+                          final mine = (mineSnapshot.data ?? const <Tag>[])
+                              .map((t) => t.id)
                               .toSet();
                           if (all.isEmpty) {
                             return const Text('No tags yet. Create one below.');
@@ -724,17 +725,17 @@ class _ItemPageState extends State<ItemPage> {
                             spacing: 6,
                             runSpacing: 6,
                             children: all.map((tag) {
-                              final selected = mine.contains(tag.id as String);
+                              final selected = mine.contains(tag.id);
                               return FilterChip(
-                                label: Text(tag.name as String),
+                                label: Text(tag.name),
                                 selected: selected,
                                 onSelected: (value) async {
                                   if (value) {
                                     await services.entries
-                                        .attachTag(bundle.entry.id, tag.id as String);
+                                        .attachTag(bundle.entry.id, tag.id);
                                   } else {
                                     await services.entries
-                                        .detachTag(bundle.entry.id, tag.id as String);
+                                        .detachTag(bundle.entry.id, tag.id);
                                   }
                                   setSheetState(() {});
                                 },
