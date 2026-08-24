@@ -9,9 +9,15 @@ import '../state/app_state.dart';
 import 'icons.dart';
 import 'theme.dart';
 
-/// Compatibility name for Flutter's generated starter tests and templates.
+/// Compatibility for files left over from `flutter create` (for example a
+/// template `test/widget_test.dart`) that call `const MyApp()` directly.
+/// This has to be a real class: a typedef alias such as
+/// `typedef MyApp = NoteNestApp;` cannot be used as a constructor, which is
+/// exactly what the analyzer error "The name 'MyApp' isn't a class" means.
 /// NoteNest uses [NoteNestApp] as its canonical application widget.
-typedef MyApp = NoteNestApp;
+class MyApp extends NoteNestApp {
+  const MyApp({super.key});
+}
 
 class NoteNestApp extends StatelessWidget {
   const NoteNestApp({super.key});
@@ -90,7 +96,6 @@ class _DesktopShell extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const _SyncRailStatus(),
                       AppIconButton(
                         icon: AppIcons.settings,
                         label: 'Settings',
