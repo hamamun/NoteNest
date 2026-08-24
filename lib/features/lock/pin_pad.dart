@@ -41,6 +41,31 @@ class _PinPadState extends State<PinPad> {
   String? _error;
   bool _busy = false;
 
+  // LogicalKeyboardKey overrides equality, so its instances cannot be keys in
+  // a const map. Keep one runtime map instead of rebuilding it per key event.
+  static final Map<LogicalKeyboardKey, String> _digitsByKey = {
+    LogicalKeyboardKey.digit0: '0',
+    LogicalKeyboardKey.digit1: '1',
+    LogicalKeyboardKey.digit2: '2',
+    LogicalKeyboardKey.digit3: '3',
+    LogicalKeyboardKey.digit4: '4',
+    LogicalKeyboardKey.digit5: '5',
+    LogicalKeyboardKey.digit6: '6',
+    LogicalKeyboardKey.digit7: '7',
+    LogicalKeyboardKey.digit8: '8',
+    LogicalKeyboardKey.digit9: '9',
+    LogicalKeyboardKey.numpad0: '0',
+    LogicalKeyboardKey.numpad1: '1',
+    LogicalKeyboardKey.numpad2: '2',
+    LogicalKeyboardKey.numpad3: '3',
+    LogicalKeyboardKey.numpad4: '4',
+    LogicalKeyboardKey.numpad5: '5',
+    LogicalKeyboardKey.numpad6: '6',
+    LogicalKeyboardKey.numpad7: '7',
+    LogicalKeyboardKey.numpad8: '8',
+    LogicalKeyboardKey.numpad9: '9',
+  };
+
   bool get _confirming => _firstPin != null;
 
   @override
@@ -70,31 +95,7 @@ class _PinPadState extends State<PinPad> {
     return KeyEventResult.handled;
   }
 
-  String? _digitFor(LogicalKeyboardKey key) {
-    const digits = <LogicalKeyboardKey, String>{
-      LogicalKeyboardKey.digit0: '0',
-      LogicalKeyboardKey.digit1: '1',
-      LogicalKeyboardKey.digit2: '2',
-      LogicalKeyboardKey.digit3: '3',
-      LogicalKeyboardKey.digit4: '4',
-      LogicalKeyboardKey.digit5: '5',
-      LogicalKeyboardKey.digit6: '6',
-      LogicalKeyboardKey.digit7: '7',
-      LogicalKeyboardKey.digit8: '8',
-      LogicalKeyboardKey.digit9: '9',
-      LogicalKeyboardKey.numpad0: '0',
-      LogicalKeyboardKey.numpad1: '1',
-      LogicalKeyboardKey.numpad2: '2',
-      LogicalKeyboardKey.numpad3: '3',
-      LogicalKeyboardKey.numpad4: '4',
-      LogicalKeyboardKey.numpad5: '5',
-      LogicalKeyboardKey.numpad6: '6',
-      LogicalKeyboardKey.numpad7: '7',
-      LogicalKeyboardKey.numpad8: '8',
-      LogicalKeyboardKey.numpad9: '9',
-    };
-    return digits[key];
-  }
+  String? _digitFor(LogicalKeyboardKey key) => _digitsByKey[key];
 
   void _tap(String digit) {
     if (!widget.enabled || _busy || _digits.length >= 4) return;
