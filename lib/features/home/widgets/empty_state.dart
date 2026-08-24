@@ -74,6 +74,33 @@ class EmptyState extends StatelessWidget {
     }
   }
 
+  factory EmptyState.locked({
+    required bool notesHidden,
+    required bool listsHidden,
+  }) {
+    if (notesHidden && listsHidden) {
+      return const EmptyState._(
+        icon: AppIcons.lock,
+        title: 'Notes and lists are locked',
+        message: 'Enter your PIN to open them.',
+      );
+    }
+    if (notesHidden) {
+      return const EmptyState._(
+        icon: AppIcons.lock,
+        title: 'Notes are locked',
+        message: 'Lists are still visible. Tap Notes and enter your PIN '
+            'to see your notes.',
+      );
+    }
+    return const EmptyState._(
+      icon: AppIcons.lock,
+      title: 'Lists are locked',
+      message: 'Notes are still visible. Tap Lists and enter your PIN '
+          'to see your lists.',
+    );
+  }
+
   /// Shown on the sync settings page before a repository is connected.
   factory EmptyState.syncNotConfigured({VoidCallback? onSetup}) => EmptyState._(
         icon: AppIcons.syncOff,

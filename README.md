@@ -156,8 +156,21 @@ The suite focuses on the logic that is expensive to get wrong:
 | `sync_decision_test.dart` | anti-resurrection invariant across all inputs |
 | `entry_file_codec_test.dart` | every synced field round-trips; awkward content |
 | `core_test.dart` | ULID, token redaction, backup crypto, export filenames |
+| `pin_lock_test.dart` | PIN hash, lock targets, auto-lock timer, session close |
 
 ---
+
+## Privacy lock
+
+Settings → PIN lock. A 4-digit PIN can hide notes, lists, or both on **this
+device only**. Archive and Trash stay open. After unlock the section auto-locks
+in 1, 5 or 15 minutes. Closing the app locks at once; leaving it in the
+phone background keeps it unlocked until the timer ends.
+
+On Android, a note or list in View Mode has a sun icon that keeps the screen
+awake while you read.
+
+The top sync cloud spins while a sync is running.
 
 ## Notes and limitations
 

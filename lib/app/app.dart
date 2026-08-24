@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../data/models/enums.dart';
 import '../data/repositories/settings_repository.dart';
 import '../features/home/home_page.dart';
+import '../features/lock/lock_lifecycle.dart';
 import '../features/settings/settings_page.dart';
 import '../state/app_state.dart';
 import 'icons.dart';
@@ -32,7 +33,7 @@ class NoteNestApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: settings.themeMode, // SET-14
-      home: const AppShell(),
+      home: const LockLifecycle(child: AppShell()),
     );
   }
 }

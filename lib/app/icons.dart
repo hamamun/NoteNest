@@ -55,6 +55,11 @@ class AppIcons {
   static const IconData history = Icons.history;
   static const IconData home = Icons.lightbulb_outline;
   static const IconData conflict = Icons.merge_type;
+
+  static const IconData lock = Icons.lock_outline;
+  static const IconData lockOpen = Icons.lock_open_outlined;
+  static const IconData keepAwake = Icons.wb_sunny_outlined;
+  static const IconData keepAwakeOff = Icons.brightness_2_outlined;
 }
 
 /// A-03/A-04/A-07: an icon button that cannot be created without an
