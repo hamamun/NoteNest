@@ -56,7 +56,9 @@ class _HomePageState extends State<HomePage> {
       appBar: state.selectionMode
           ? _selectionAppBar(context, state)
           : _normalAppBar(context, state, settings),
-      floatingActionButton: state.workspace == Workspace.home && !state.selectionMode
+      floatingActionButton: state.workspace == Workspace.home &&
+              !state.selectionMode &&
+              !widget.isDesktop
           ? _fab(context)
           : null,
       body: Column(
