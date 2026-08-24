@@ -609,3 +609,16 @@ BLD  -> Goal (platform scope), Development Environment, Best Starting Path
 ```
 
 Nothing in the two source documents is unrepresented here.
+
+---
+
+## 24. Later additions (session PIN lock + polish)
+
+Added after v1, by request. Device-local only.
+
+- [~] **PIN-01** MUST Settings > Privacy: set / change / remove a 4-digit PIN. Hash stored in `flutter_secure_storage`, never synced.
+- [~] **PIN-02** MUST lock target: Notes only / Lists only / Both. Archive and Trash are never locked.
+- [~] **PIN-03** MUST Home All hides locked types. Tapping Notes or Lists asks for the PIN. Both locked → PIN on app open.
+- [~] **PIN-04** MUST auto-lock after 1 / 5 / 15 minutes. Closing the app locks at once. A phone left in the background stays unlocked until the timer ends.
+- [~] **G-13b** MUST the top sync icon spins while a sync is running.
+- [~] **AWK-01** MUST Android View Mode has a keep-screen-on toggle. Off when leaving the item or switching to Edit. Not shown on Windows.

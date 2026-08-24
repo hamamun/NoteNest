@@ -166,3 +166,44 @@ enum Workspace {
   final String label;
   final EntryLocation location;
 }
+
+/// What a set PIN protects on this device. Archive and Trash are never locked.
+enum PinLockTarget {
+  notes('notes', 'Notes only'),
+  lists('lists', 'Lists only'),
+  both('both', 'Notes and lists');
+
+  const PinLockTarget(this.value, this.label);
+  final String value;
+  final String label;
+
+  static PinLockTarget parse(String? raw) => PinLockTarget.values.firstWhere(
+        (t) => t.value == raw,
+        orElse: () => PinLockTarget.both,
+      );
+
+  bool get locksNotes => this == notes || this == both;
+  bool get locksLists => this == lists || this == both;
+}
+
+/// Auto-lock countdown after a successful unlock. Closing the app locks at
+/// once; a phone left in the background stays unlocked until this elapses.
+enum AutoLockMinutes {
+  one(1, '1 minute'),
+  five(5, '5 minutes'),
+  fifteen(15, '15 minutes');
+
+  const AutoLockMinutes(this.minutes, this.label);
+  final int minutes;
+  final String label;
+
+  Duration get duration => Duration(minutes: minutes);
+
+  static AutoLockMinutes parse(String? raw) {
+    final value = int.tryParse(raw ?? '');
+    return AutoLockMinutes.values.firstWhere(
+      (t) => t.minutes == value,
+      orElse: () => AutoLockMinutes.five,
+    );
+  }
+}

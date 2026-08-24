@@ -7,12 +7,15 @@ import 'package:provider/provider.dart';
 import '../../app/color_picker.dart';
 import '../../app/icons.dart';
 import '../../app/services.dart';
+import '../../app/sync_button.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../state/app_state.dart';
 import '../export/export_dialog.dart';
 import '../item/item_page.dart';
+import '../lock/pin_lock_controller.dart';
+import '../lock/pin_pad.dart';
 import '../sync/sync_controller.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/entry_card.dart';
@@ -51,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     final state = context.watch<AppState>();
     final settings = context.watch<SettingsRepository>();
     final services = context.read<Services>();
+    final lock = context.watch<PinLockController>();
 
     return Scaffold(
       appBar: state.selectionMode
@@ -80,8 +84,54 @@ class _HomePageState extends State<HomePage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final bundles = snapshot.data ?? const <EntryBundle>[];
+                var bundles = snapshot.data ?? const <EntryBundle>[];
+                final onHome = state.workspace == Workspace.home;
+                if (onHome) {
+                  if (lock.shouldHideNotes) {
+                    bundles = bundles
+                        .where((b) => b.isChecklist)
+                        .toList(growable: false);
+                  }
+                  if (lock.shouldHideLists) {
+                    bundles = bundles
+                        .where((b) => !b.isChecklist)
+                        .toList(growable: false);
+                  }
+                }
+
+                if (onHome &&
+                    state.filter == EntryFilter.all &&
+                    lock.needsHomeGate) {
+                  return PinUnlockView(
+                    lock: lock,
+                    title: 'Enter PIN',
+                    subtitle: 'Notes and lists are locked',
+                  );
+                }
+                if (onHome && lock.policy.needsNotesGate(state.filter)) {
+                  return PinUnlockView(
+                    lock: lock,
+                    title: 'Enter PIN',
+                    subtitle: 'Notes are locked',
+                  );
+                }
+                if (onHome && lock.policy.needsListsGate(state.filter)) {
+                  return PinUnlockView(
+                    lock: lock,
+                    title: 'Enter PIN',
+                    subtitle: 'Lists are locked',
+                  );
+                }
+
                 if (bundles.isEmpty) {
+                  if (onHome &&
+                      (lock.shouldHideNotes || lock.shouldHideLists) &&
+                      state.query.trim().isEmpty) {
+                    return EmptyState.locked(
+                      notesHidden: lock.shouldHideNotes,
+                      listsHidden: lock.shouldHideLists,
+                    );
+                  }
                   return EmptyState.forWorkspace(
                     state.workspace,
                     searching: state.query.trim().isNotEmpty,
@@ -159,17 +209,13 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => _showSortOptions(context, settings),
           ),
         if (!widget.isDesktop)
-          AppIconButton(
-            icon: sync.state == SyncUiState.connected
-                ? AppIcons.syncOk
-                : AppIcons.syncOff,
-            label: sync.statusLabel,
+          SyncStatusButton(
+            sync: sync,
             onPressed: sync.canSync ? () => _sync(context) : null,
           ),
         if (widget.isDesktop) ...[
-          AppIconButton(
-            icon: AppIcons.sync,
-            label: sync.statusLabel,
+          SyncStatusButton(
+            sync: sync,
             onPressed: sync.canSync ? () => _sync(context) : null,
           ),
           Padding(
@@ -271,6 +317,22 @@ class _HomePageState extends State<HomePage> {
   // Filters
   // ---------------------------------------------------------------------
 
+  Widget? _lockAvatar(BuildContext context, EntryFilter filter) {
+    if (context.read<AppState>().workspace != Workspace.home) return null;
+    final lock = context.read<PinLockController>();
+    final locked = switch (filter) {
+      EntryFilter.all => lock.needsHomeGate,
+      EntryFilter.notes => lock.shouldHideNotes,
+      EntryFilter.lists => lock.shouldHideLists,
+    };
+    if (!locked) return null;
+    return Icon(
+      AppIcons.lock,
+      size: 16,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+  }
+
   Widget _filterRow(BuildContext context, AppState state) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
@@ -280,6 +342,7 @@ class _HomePageState extends State<HomePage> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
+                avatar: _lockAvatar(context, filter),
                 label: Text(filter.label),
                 selected: state.filter == filter,
                 onSelected: (_) => context.read<AppState>().setFilter(filter),
@@ -401,7 +464,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showCreateOptions(BuildContext context) {
+  Future<void> _showCreateOptions(BuildContext context) async {
+    final lock = context.read<PinLockController>();
+    if (lock.shouldHideNotes && lock.shouldHideLists) {
+      final unlocked = await _unlockIfNeeded(context, lock);
+      if (!unlocked || !context.mounted) return;
+    }
+
+    if (!context.mounted) return;
     showActionSheet(
       context,
       title: 'Create',
@@ -420,7 +490,52 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<bool> _unlockIfNeeded(
+    BuildContext context,
+    PinLockController lock,
+  ) async {
+    if (!lock.shouldHideNotes && !lock.shouldHideLists) return true;
+    var ok = false;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
+          content: SizedBox(
+            width: 360,
+            child: PinPad(
+              title: 'Enter PIN',
+              subtitle: 'Unlock to continue',
+              onSubmit: (pin) async {
+                final unlocked = await lock.unlockWithPin(pin);
+                if (unlocked && dialogContext.mounted) {
+                  ok = true;
+                  Navigator.of(dialogContext).pop();
+                }
+                return unlocked;
+              },
+              footer: TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    return ok;
+  }
+
   Future<void> _create(BuildContext context, EntryType type) async {
+    final lock = context.read<PinLockController>();
+    final blocked =
+        type.isChecklist ? lock.shouldHideLists : lock.shouldHideNotes;
+    if (blocked) {
+      final unlocked = await _unlockIfNeeded(context, lock);
+      if (!unlocked || !context.mounted) return;
+    }
+
     final services = context.read<Services>();
     final id = await services.entries.createEntry(type);
     if (!context.mounted) return;

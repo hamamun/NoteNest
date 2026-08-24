@@ -7,9 +7,11 @@ import '../../core/time.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/repositories/sync_config_repository.dart';
 import '../sync/sync_controller.dart';
+import '../lock/pin_lock_controller.dart';
 import 'about_page.dart';
 import 'appearance_page.dart';
 import 'backup_settings_page.dart';
+import 'lock_settings_page.dart';
 import 'sync_settings_page.dart';
 import 'tags_page.dart';
 
@@ -25,6 +27,7 @@ class SettingsPage extends StatelessWidget {
     final settings = context.watch<SettingsRepository>();
     final config = context.watch<SyncConfigRepository>();
     final sync = context.watch<SyncController>();
+    final lock = context.watch<PinLockController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -88,6 +91,21 @@ class SettingsPage extends StatelessWidget {
                 subtitle: const Text('Create, rename and delete tags'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _push(context, const TagsPage()),
+              ),
+
+              _section(context, 'Privacy'),
+              ListTile(
+                leading: Icon(
+                  lock.hasPin ? AppIcons.lock : AppIcons.lockOpen,
+                ),
+                title: const Text('PIN lock'),
+                subtitle: Text(
+                  lock.hasPin
+                      ? 'On · ${lock.target.label} · auto-lock ${lock.autoLock.label}'
+                      : 'Off. Set a 4-digit PIN to hide notes or lists.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _push(context, const LockSettingsPage()),
               ),
 
               _section(context, 'Sync'),

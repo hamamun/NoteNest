@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import '../../app/color_picker.dart';
 import '../../app/icons.dart';
+import '../../app/screen_awake.dart';
 import '../../app/services.dart';
 import '../../app/theme.dart';
 import '../../core/time.dart';
@@ -16,7 +19,10 @@ import '../../data/models/enums.dart';
 import '../../data/repositories/checklist_matcher.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
+import '../../state/app_state.dart';
 import '../export/export_dialog.dart';
+import '../lock/pin_lock_controller.dart';
+import '../lock/pin_pad.dart';
 import 'widgets/image_strip.dart';
 import 'widgets/linkified_text.dart';
 import 'widgets/simple_markdown.dart';
@@ -47,6 +53,9 @@ class _ItemPageState extends State<ItemPage> {
   Timer? _autosave;
   bool _controllersPrimed = false;
   bool _dirty = false;
+  bool _keepAwake = false;
+
+  bool get _isMobile => !kIsWeb && Platform.isAndroid;
 
   @override
   void initState() {
@@ -61,12 +70,17 @@ class _ItemPageState extends State<ItemPage> {
   @override
   void dispose() {
     _autosave?.cancel();
+    unawaited(ScreenAwake.setEnabled(false));
     // N-07: never lose the last keystrokes on the way out.
     unawaited(_saveNow());
     _titleController.dispose();
     _bodyController.dispose();
     _bodyFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _applyKeepAwake() async {
+    await ScreenAwake.setEnabled(_keepAwake && !_editing && _isMobile);
   }
 
   /// N-07: debounce 800 ms, plus save on mode switch and on leaving.
@@ -90,9 +104,26 @@ class _ItemPageState extends State<ItemPage> {
   Future<void> _setEditing(bool editing) async {
     if (!editing) await _saveNow();
     setState(() => _editing = editing);
+    await _applyKeepAwake();
     if (editing) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _bodyFocus.requestFocus());
     }
+  }
+
+  Future<void> _toggleKeepAwake() async {
+    setState(() => _keepAwake = !_keepAwake);
+    await _applyKeepAwake();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _keepAwake
+              ? 'Screen will stay on while you read'
+              : 'Screen can sleep again',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -121,6 +152,28 @@ class _ItemPageState extends State<ItemPage> {
         final background = color.isDefault
             ? Theme.of(context).scaffoldBackgroundColor
             : color.surface(brightness);
+
+        final lock = context.watch<PinLockController>();
+        final onHome = context.watch<AppState>().workspace == Workspace.home;
+        if (onHome && lock.policy.hidesEntry(bundle.type)) {
+          return Scaffold(
+            backgroundColor: background,
+            appBar: AppBar(
+              backgroundColor: background,
+              leading: AppIconButton(
+                icon: AppIcons.back,
+                label: 'Back',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            body: PinUnlockView(
+              lock: lock,
+              title: 'Enter PIN',
+              subtitle:
+                  bundle.isChecklist ? 'Lists are locked' : 'Notes are locked',
+            ),
+          );
+        }
 
         return Scaffold(
           backgroundColor: background,
@@ -207,6 +260,16 @@ class _ItemPageState extends State<ItemPage> {
             onPressed: () => _copyAll(context, bundle),
           ),
 
+        // Notes have room in the bar. Lists already have the checkbox
+        // toggle, so keep-awake lives in ⋮ there to avoid overflow.
+        if (_isMobile && !_editing && !bundle.isChecklist)
+          AppIconButton(
+            icon: _keepAwake ? AppIcons.keepAwake : AppIcons.keepAwakeOff,
+            label: _keepAwake ? 'Allow screen to sleep' : 'Keep screen on',
+            selected: _keepAwake,
+            onPressed: _toggleKeepAwake,
+          ),
+
         if (isDesktop) ...[
           AppIconButton(
             icon: AppIcons.color,
@@ -285,6 +348,8 @@ class _ItemPageState extends State<ItemPage> {
     final id = bundle.entry.id;
 
     switch (value) {
+      case 'awake':
+        await _toggleKeepAwake();
       case 'color':
         await _pickColor(context, bundle, isDesktop);
       case 'image':

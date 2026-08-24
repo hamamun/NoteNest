@@ -19,6 +19,7 @@ class SecureStore {
   static const _kGithubPat = 'github_pat';
   static const _kBackupPassphrase = 'backup_passphrase';
   static const _kSyncPassphrase = 'sync_passphrase';
+  static const _kPinHash = 'app_pin_hash';
 
   // --- GitHub token (SEC-07) ---
 
@@ -64,7 +65,22 @@ class SecureStore {
     return value != null && value.isNotEmpty;
   }
 
-  /// SEC-12: Disconnect wipes every secret this app owns.
+  // --- App PIN (device lock). Hash only — never the digits. ---
+
+  Future<String?> readPinHash() => _storage.read(key: _kPinHash);
+
+  Future<void> writePinHash(String hash) =>
+      _storage.write(key: _kPinHash, value: hash);
+
+  Future<void> deletePinHash() => _storage.delete(key: _kPinHash);
+
+  Future<bool> hasPin() async {
+    final hash = await readPinHash();
+    return hash != null && hash.isNotEmpty;
+  }
+
+  /// SEC-12: Disconnect wipes sync secrets. The app PIN is a device lock, not
+  /// a GitHub secret, so it is left in place.
   Future<void> wipeAll() async {
     await deleteToken();
     await deleteBackupPassphrase();

@@ -6,6 +6,7 @@ import 'app/services.dart';
 import 'core/logging.dart';
 import 'data/repositories/settings_repository.dart';
 import 'data/repositories/sync_config_repository.dart';
+import 'features/lock/pin_lock_controller.dart';
 import 'features/sync/sync_controller.dart';
 import 'state/app_state.dart';
 
@@ -24,6 +25,12 @@ Future<void> main() async {
   // a token exists (G-16, SEC-13).
   await services.sync.init();
 
+  final pinLock = PinLockController(
+    settings: services.settings,
+    secureStore: services.secureStore,
+  );
+  await pinLock.load();
+
   runApp(
     MultiProvider(
       providers: [
@@ -33,6 +40,7 @@ Future<void> main() async {
           value: services.syncConfig,
         ),
         ChangeNotifierProvider<SyncController>.value(value: services.sync),
+        ChangeNotifierProvider<PinLockController>.value(value: pinLock),
         ChangeNotifierProvider<AppState>(create: (_) => AppState()),
       ],
       child: const NoteNestApp(),

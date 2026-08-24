@@ -33,6 +33,8 @@ class SettingsRepository extends ChangeNotifier {
   static const _kMarkdownPreview = 'markdown_preview_enabled';
   static const _kObsidianFolder = 'obsidian_folder_path';
   static const _kFirstRunDone = 'first_run_done';
+  static const _kPinLockTarget = 'pin_lock_target';
+  static const _kAutoLockMinutes = 'auto_lock_minutes';
 
   Future<void> load() async {
     final rows = await _db.select(_db.appSettings).get();
@@ -134,4 +136,14 @@ class SettingsRepository extends ChangeNotifier {
 
   bool get firstRunDone => (_get(_kFirstRunDone) ?? 'false') == 'true';
   Future<void> setFirstRunDone() => _set(_kFirstRunDone, 'true');
+
+  // --- PIN lock (device-local, never synced) ---
+  PinLockTarget get pinLockTarget => PinLockTarget.parse(_get(_kPinLockTarget));
+  Future<void> setPinLockTarget(PinLockTarget target) =>
+      _set(_kPinLockTarget, target.value);
+
+  AutoLockMinutes get autoLockMinutes =>
+      AutoLockMinutes.parse(_get(_kAutoLockMinutes));
+  Future<void> setAutoLockMinutes(AutoLockMinutes value) =>
+      _set(_kAutoLockMinutes, value.minutes.toString());
 }

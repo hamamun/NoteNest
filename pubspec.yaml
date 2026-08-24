@@ -53,6 +53,9 @@ dependencies:
   device_info_plus: ">=10.0.0 <13.0.0"
   package_info_plus: ">=5.0.0 <10.0.0"
 
+  # --- Mobile View Mode: keep the screen on while reading ---
+  wakelock_plus: ">=1.2.0 <2.0.0"
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
