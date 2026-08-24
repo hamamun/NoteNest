@@ -5,10 +5,13 @@ import '../data/models/enums.dart';
 import '../data/repositories/settings_repository.dart';
 import '../features/home/home_page.dart';
 import '../features/settings/settings_page.dart';
-import '../features/sync/sync_controller.dart';
 import '../state/app_state.dart';
 import 'icons.dart';
 import 'theme.dart';
+
+/// Compatibility name for Flutter's generated starter tests and templates.
+/// NoteNest uses [NoteNestApp] as its canonical application widget.
+typedef MyApp = NoteNestApp;
 
 class NoteNestApp extends StatelessWidget {
   const NoteNestApp({super.key});
@@ -156,10 +159,6 @@ class _MobileShell extends StatelessWidget {
               );
             },
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: _SyncDrawerStatus(),
-          ),
         ],
       ),
       body: const HomePage(isDesktop: false),
@@ -204,77 +203,6 @@ class _BrandMark extends StatelessWidget {
               .textTheme
               .titleMedium
               ?.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-}
-
-/// G-13: compact sync indicator for the rail.
-class _SyncRailStatus extends StatelessWidget {
-  const _SyncRailStatus();
-
-  @override
-  Widget build(BuildContext context) {
-    final sync = context.watch<SyncController>();
-    final scheme = Theme.of(context).colorScheme;
-
-    if (sync.isSyncing) {
-      return const Padding(
-        padding: EdgeInsets.all(14),
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    final (icon, color) = switch (sync.state) {
-      SyncUiState.connected => (AppIcons.syncOk, null),
-      SyncUiState.failed => (AppIcons.syncError, scheme.error),
-      SyncUiState.reconnectRequired => (AppIcons.syncOff, scheme.error),
-      _ => (AppIcons.syncOff, null),
-    };
-
-    return AppIconButton(
-      icon: icon,
-      label: sync.statusLabel,
-      color: color,
-      onPressed: sync.canSync
-          ? () async {
-              final result = await context.read<SyncController>().syncNow();
-              if (result != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result.summary)),
-                );
-              }
-            }
-          : null,
-    );
-  }
-}
-
-class _SyncDrawerStatus extends StatelessWidget {
-  const _SyncDrawerStatus();
-
-  @override
-  Widget build(BuildContext context) {
-    final sync = context.watch<SyncController>();
-    return Row(
-      children: [
-        Icon(
-          sync.state == SyncUiState.connected ? AppIcons.syncOk : AppIcons.syncOff,
-          size: 16,
-          color: Theme.of(context).colorScheme.outline,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            sync.statusLabel,
-            style: Theme.of(context).textTheme.bodySmall,
-            overflow: TextOverflow.ellipsis,
-          ),
         ),
       ],
     );

@@ -106,7 +106,10 @@ class _EntryCardState extends State<EntryCard> {
                   _body(foreground, compact),
                   if (widget.bundle.tags.isNotEmpty && !compact)
                     _tags(theme, foreground),
-                  if (!compact) _footer(theme, foreground),
+                  // Keep the action row available in compact mode too. On
+                  // desktop it changes from metadata to the action buttons
+                  // while the pointer is over the card.
+                  _footer(theme, foreground),
                 ],
               ),
             ),
