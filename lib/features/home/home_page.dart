@@ -22,9 +22,13 @@ import 'widgets/entry_card.dart';
 
 /// U-03/U-08: the main browsing screen for Home, Archive and Trash.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.isDesktop});
+  const HomePage({super.key, required this.isDesktop, this.onOpenDrawer});
 
   final bool isDesktop;
+
+  /// Opens the outer scaffold's navigation drawer. Only the mobile shell
+  /// provides this; the desktop shell shows a permanent rail instead.
+  final VoidCallback? onOpenDrawer;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -163,8 +167,16 @@ class _HomePageState extends State<HomePage> {
     final sync = context.watch<SyncController>();
 
     return AppBar(
-      automaticallyImplyLeading: !widget.isDesktop,
-      titleSpacing: widget.isDesktop ? 20 : 8,
+      leading: widget.onOpenDrawer == null
+          ? null
+          : AppIconButton(
+              icon: AppIcons.menu,
+              label: 'Open navigation menu',
+              onPressed: widget.onOpenDrawer,
+            ),
+      automaticallyImplyLeading:
+          widget.onOpenDrawer == null && !widget.isDesktop,
+      titleSpacing: widget.isDesktop ? 20 : 16,
       title: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620),
         child: SizedBox(

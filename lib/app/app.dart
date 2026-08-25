@@ -167,7 +167,12 @@ class _MobileShell extends StatelessWidget {
           ),
         ],
       ),
-      body: const HomePage(isDesktop: false),
+      body: Builder(
+        builder: (context) => HomePage(
+          isDesktop: false,
+          onOpenDrawer: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
     );
   }
 }
