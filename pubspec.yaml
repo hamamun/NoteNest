@@ -68,7 +68,9 @@ dev_dependencies:
 # blue). Regenerate after `flutter create` with: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
-  ios: true
+  # No ios/ folder in this repo (v1 ships Windows + Android). Flip to true
+  # after adding the iOS platform via flutter create.
+  ios: false
   remove_alpha_ios: true
   image_path: "assets/icon/app_icon.png"
   # Android 8+ adaptive icons: blue field from the icon itself, with the
