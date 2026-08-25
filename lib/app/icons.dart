@@ -16,6 +16,7 @@ class AppIcons {
   static const IconData viewGrid = Icons.grid_view_outlined;
   static const IconData viewList = Icons.view_agenda_outlined;
   static const IconData viewCompact = Icons.density_small_outlined;
+  static const IconData viewRows = Icons.table_rows_outlined;
   static const IconData sort = Icons.sort;
 
   static const IconData checkboxesOn = Icons.check_box_outlined;
@@ -36,8 +37,6 @@ class AppIcons {
   static const IconData copyAll = Icons.copy_all_outlined;
   static const IconData color = Icons.palette_outlined;
   static const IconData image = Icons.image_outlined;
-  static const IconData tag = Icons.label_outline;
-
   static const IconData pin = Icons.push_pin;
   static const IconData pinOutline = Icons.push_pin_outlined;
 

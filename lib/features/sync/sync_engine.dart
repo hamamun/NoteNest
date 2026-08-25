@@ -429,7 +429,6 @@ class SyncEngine {
       archivedAt: entry.archivedAt,
       trashedAt: entry.trashedAt,
       imageIds: bundle.images.map((i) => i.id).toList(),
-      tags: bundle.tags.map((t) => t.name).toList(),
       encrypted: encrypt,
       conflictOfId: entry.conflictOfId,
     );

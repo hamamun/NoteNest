@@ -137,7 +137,7 @@ lib/
     item/       View/Edit modes, checklist, images, links
     export/     PDF + TXT export
     backup/     zip snapshots, optional encryption, Markdown folder import
-    settings/   appearance, sync, backup, tags, about
+    settings/   appearance, sync, backup, about
     sync/       GitHub client, file codec, decision table, sync engine
 test/           checklist matcher, sync decision table, file codec, core
 ```

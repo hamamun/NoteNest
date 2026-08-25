@@ -35,7 +35,6 @@ void main() {
       archivedAt: location == EntryLocation.archive ? now : null,
       trashedAt: location == EntryLocation.trash ? now : null,
       imageIds: const ['img-1', 'img-2'],
-      tags: const ['work', 'urgent'],
     );
   }
 
@@ -59,7 +58,6 @@ void main() {
       expect(decoded.contentUpdatedAt, original.contentUpdatedAt);
       expect(decoded.metadataUpdatedAt, original.metadataUpdatedAt);
       expect(decoded.imageIds, ['img-1', 'img-2']);
-      expect(decoded.tags, ['work', 'urgent']);
     });
 
     test('archive state survives', () {
@@ -122,7 +120,6 @@ void main() {
         archivedAt: null,
         trashedAt: null,
         imageIds: const [],
-        tags: const [],
       );
       final decoded = EntryFile.decode(file.encode());
       expect(decoded!.title, 'Plan: buy "milk" — 3:30pm');
@@ -148,7 +145,6 @@ void main() {
         archivedAt: null,
         trashedAt: null,
         imageIds: const [],
-        tags: const [],
       );
       final decoded = EntryFile.decode(file.encode());
       expect(decoded!.body, 'before\n---\nafter');
@@ -174,7 +170,6 @@ void main() {
         archivedAt: null,
         trashedAt: null,
         imageIds: const [],
-        tags: const [],
       );
       final decoded = EntryFile.decode(file.encode());
       expect(decoded!.title, 'কেনাকাটা');

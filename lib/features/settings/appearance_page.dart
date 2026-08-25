@@ -159,6 +159,11 @@ class AppearancePage extends StatelessWidget {
                     label: Text('Compact'),
                     icon: Icon(AppIcons.viewCompact),
                   ),
+                  ButtonSegment(
+                    value: CardViewMode.rows,
+                    label: Text('Rows'),
+                    icon: Icon(AppIcons.viewRows),
+                  ),
                 ],
                 selected: {settings.cardViewMode},
                 onSelectionChanged: (selection) =>

@@ -80,7 +80,6 @@ class _HomePageState extends State<HomePage> {
                 filter: state.filter,
                 sort: settings.sortMode,
                 query: state.query,
-                tagId: state.activeTagId,
               ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting &&
@@ -210,6 +209,7 @@ class _HomePageState extends State<HomePage> {
             CardViewMode.grid => AppIcons.viewGrid,
             CardViewMode.list => AppIcons.viewList,
             CardViewMode.compact => AppIcons.viewCompact,
+            CardViewMode.rows => AppIcons.viewRows,
           },
           label: 'View: ${settings.cardViewMode.label}',
           onPressed: () => _showViewOptions(context, settings),
@@ -267,6 +267,7 @@ class _HomePageState extends State<HomePage> {
   /// U-06/E-02/E-03: the selection toolbar.
   PreferredSizeWidget _selectionAppBar(BuildContext context, AppState state) {
     final inTrash = state.workspace == Workspace.trash;
+    final inArchive = state.workspace == Workspace.archive;
 
     return AppBar(
       leading: AppIconButton(
@@ -281,7 +282,46 @@ class _HomePageState extends State<HomePage> {
           label: 'Export selected',
           onPressed: () => _exportSelected(context, state),
         ),
-        if (!inTrash) ...[
+        if (inTrash) ...[
+          AppIconButton(
+            icon: AppIcons.restore,
+            label: 'Restore selected',
+            onPressed: () async {
+              final services = context.read<Services>();
+              await services.entries.restoreAll(state.selected);
+              if (context.mounted) context.read<AppState>().clearSelection();
+            },
+          ),
+          AppIconButton(
+            icon: AppIcons.deleteForever,
+            label: 'Delete selected forever',
+            onPressed: () => _deleteSelectedForever(context, state),
+          ),
+        ] else if (inArchive) ...[
+          AppIconButton(
+            icon: AppIcons.color,
+            label: 'Change colour',
+            onPressed: () => _colorSelected(context, state),
+          ),
+          AppIconButton(
+            icon: AppIcons.unarchive,
+            label: 'Unarchive selected',
+            onPressed: () async {
+              final services = context.read<Services>();
+              await services.entries.unarchiveAll(state.selected);
+              if (context.mounted) context.read<AppState>().clearSelection();
+            },
+          ),
+          AppIconButton(
+            icon: AppIcons.trash,
+            label: 'Move selected to trash',
+            onPressed: () async {
+              final services = context.read<Services>();
+              await services.entries.trashAll(state.selected);
+              if (context.mounted) context.read<AppState>().clearSelection();
+            },
+          ),
+        ] else ...[
           AppIconButton(
             icon: AppIcons.color,
             label: 'Change colour',
@@ -304,21 +344,6 @@ class _HomePageState extends State<HomePage> {
               await services.entries.trashAll(state.selected);
               if (context.mounted) context.read<AppState>().clearSelection();
             },
-          ),
-        ] else ...[
-          AppIconButton(
-            icon: AppIcons.restore,
-            label: 'Restore selected',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.restoreAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
-          ),
-          AppIconButton(
-            icon: AppIcons.deleteForever,
-            label: 'Delete selected forever',
-            onPressed: () => _deleteSelectedForever(context, state),
           ),
         ],
       ],
@@ -436,7 +461,19 @@ class _HomePageState extends State<HomePage> {
               : context.read<Services>().entries.restoreFromTrash(bundle.entry.id),
           onDeleteForever: () => _deleteForever(context, bundle),
           onExport: () => ExportDialog.show(context, [bundle]),
+          onMore: widget.isDesktop && mode != CardViewMode.rows
+              ? null
+              : () => _showCardActions(context, bundle, state),
         );
+
+    if (mode == CardViewMode.rows) {
+      return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
+        itemCount: bundles.length,
+        separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1),
+        itemBuilder: (context, index) => cardFor(bundles[index]),
+      );
+    }
 
     if (mode == CardViewMode.list) {
       return ListView.separated(
@@ -450,6 +487,7 @@ class _HomePageState extends State<HomePage> {
     // U-11: masonry for grid and compact, with a column count that adapts.
     final columns = switch (mode) {
       CardViewMode.compact => (width / 210).floor().clamp(2, 8),
+      CardViewMode.rows => 1,
       _ => (width / 280).floor().clamp(1, 6),
     };
 
@@ -573,6 +611,77 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _showCardActions(
+    BuildContext context,
+    EntryBundle bundle,
+    AppState state,
+  ) {
+    final inTrash = state.workspace == Workspace.trash;
+    final inArchive = state.workspace == Workspace.archive;
+    showActionSheet(
+      context,
+      title: bundle.entry.title.trim().isEmpty
+          ? 'Untitled'
+          : bundle.entry.title.trim(),
+      actions: [
+        if (!inTrash) ...[
+          SheetAction(
+            icon: AppIcons.pinOutline,
+            label: bundle.entry.isPinned ? 'Unpin' : 'Pin',
+            onTap: () =>
+                context.read<Services>().entries.togglePinned(bundle.entry.id),
+          ),
+          SheetAction(
+            icon: AppIcons.color,
+            label: 'Change colour',
+            onTap: () => _pickColor(context, bundle),
+          ),
+          SheetAction(
+            icon: inArchive ? AppIcons.unarchive : AppIcons.archive,
+            label: inArchive ? 'Unarchive' : 'Archive',
+            onTap: () => inArchive
+                ? context
+                    .read<Services>()
+                    .entries
+                    .restoreFromArchive(bundle.entry.id)
+                : context.read<Services>().entries.archive(bundle.entry.id),
+          ),
+          SheetAction(
+            icon: AppIcons.export,
+            label: 'Export',
+            onTap: () => ExportDialog.show(context, [bundle]),
+          ),
+          SheetAction(
+            icon: AppIcons.trash,
+            label: 'Move to trash',
+            onTap: () =>
+                context.read<Services>().entries.moveToTrash(bundle.entry.id),
+          ),
+        ] else ...[
+          SheetAction(
+            icon: AppIcons.restore,
+            label: 'Restore',
+            onTap: () => context
+                .read<Services>()
+                .entries
+                .restoreFromTrash(bundle.entry.id),
+          ),
+          SheetAction(
+            icon: AppIcons.export,
+            label: 'Export',
+            onTap: () => ExportDialog.show(context, [bundle]),
+          ),
+          SheetAction(
+            icon: AppIcons.deleteForever,
+            label: 'Delete forever',
+            destructive: true,
+            onTap: () => _deleteForever(context, bundle),
+          ),
+        ],
+      ],
+    );
+  }
+
   void _showViewOptions(BuildContext context, SettingsRepository settings) {
     showActionSheet(
       context,
@@ -584,6 +693,7 @@ class _HomePageState extends State<HomePage> {
               CardViewMode.grid => AppIcons.viewGrid,
               CardViewMode.list => AppIcons.viewList,
               CardViewMode.compact => AppIcons.viewCompact,
+              CardViewMode.rows => AppIcons.viewRows,
             },
             label: mode.label,
             selected: settings.cardViewMode == mode,

@@ -30,7 +30,6 @@ class EntryFile {
     required this.archivedAt,
     required this.trashedAt,
     required this.imageIds,
-    required this.tags,
     this.encrypted = false,
     this.conflictOfId,
   });
@@ -52,7 +51,6 @@ class EntryFile {
   final int? archivedAt;
   final int? trashedAt;
   final List<String> imageIds;
-  final List<String> tags;
   final bool encrypted;
   final String? conflictOfId;
 
@@ -95,12 +93,6 @@ class EntryFile {
         buffer.writeln('  - $image');
       }
     }
-    if (tags.isNotEmpty) {
-      buffer.writeln('tags:');
-      for (final tag in tags) {
-        buffer.writeln('  - ${_escape(tag)}');
-      }
-    }
 
     buffer.writeln('---');
     buffer.writeln();
@@ -140,7 +132,6 @@ class EntryFile {
     final text = raw.replaceAll('\r\n', '\n');
     final meta = <String, String>{};
     final images = <String>[];
-    final tags = <String>[];
     var body = text;
 
     if (text.startsWith('---')) {
@@ -160,8 +151,6 @@ class EntryFile {
             final value = _unescape(itemMatch.group(1)!);
             if (listKey == 'images') {
               images.add(value);
-            } else if (listKey == 'tags') {
-              tags.add(value);
             }
             continue;
           }
@@ -204,7 +193,6 @@ class EntryFile {
       archivedAt: AppTime.parseIso(meta['archived']),
       trashedAt: AppTime.parseIso(meta['trashed']),
       imageIds: images,
-      tags: tags,
       encrypted: meta['encrypted'] == 'true',
       conflictOfId: meta['conflict_of'],
     );

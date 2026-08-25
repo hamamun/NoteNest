@@ -10,13 +10,11 @@ class AppState extends ChangeNotifier {
   Workspace _workspace = Workspace.home;
   EntryFilter _filter = EntryFilter.all;
   String _query = '';
-  String? _activeTagId;
   final Set<String> _selected = <String>{};
 
   Workspace get workspace => _workspace;
   EntryFilter get filter => _filter;
   String get query => _query;
-  String? get activeTagId => _activeTagId;
 
   Set<String> get selected => Set.unmodifiable(_selected);
   int get selectedCount => _selected.length;
@@ -43,11 +41,6 @@ class AppState extends ChangeNotifier {
   void setQuery(String query) {
     if (_query == query) return;
     _query = query;
-    notifyListeners();
-  }
-
-  void setActiveTag(String? tagId) {
-    _activeTagId = tagId;
     notifyListeners();
   }
 

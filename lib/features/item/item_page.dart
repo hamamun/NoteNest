@@ -192,7 +192,6 @@ class _ItemPageState extends State<ItemPage> {
                       editing: _editing,
                       onDelete: (image) => services.entries.deleteImage(image.id),
                     ),
-                    if (bundle.tags.isNotEmpty && !_editing) _tagRow(bundle),
                     _content(context, bundle, settings),
                     const SizedBox(height: 24),
                     _metaFooter(bundle),
@@ -312,7 +311,6 @@ class _ItemPageState extends State<ItemPage> {
                 const PopupMenuItem(value: 'color', child: Text('Change colour')),
               if (!isDesktop && _editing)
                 const PopupMenuItem(value: 'image', child: Text('Insert image')),
-              const PopupMenuItem(value: 'tags', child: Text('Tags')),
               const PopupMenuItem(value: 'export', child: Text('Export')),
               const PopupMenuItem(value: 'history', child: Text('History')),
               const PopupMenuDivider(),
@@ -354,8 +352,6 @@ class _ItemPageState extends State<ItemPage> {
         await _pickColor(context, bundle, isDesktop);
       case 'image':
         await _insertImage(context, bundle);
-      case 'tags':
-        await _editTags(context, bundle);
       case 'export':
         await ExportDialog.show(context, [bundle]);
       case 'history':
@@ -565,23 +561,6 @@ class _ItemPageState extends State<ItemPage> {
     );
   }
 
-  Widget _tagRow(EntryBundle bundle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: bundle.tags
-            .map((tag) => Chip(
-                  label: Text(tag.name),
-                  visualDensity: VisualDensity.compact,
-                  avatar: const Icon(AppIcons.tag, size: 14),
-                ))
-            .toList(),
-      ),
-    );
-  }
-
   Widget _metaFooter(EntryBundle bundle) {
     final theme = Theme.of(context);
     final checked = bundle.isChecklist
@@ -727,99 +706,6 @@ class _ItemPageState extends State<ItemPage> {
       sizeBytes: stored.sizeBytes,
       width: stored.width,
       height: stored.height,
-    );
-  }
-
-  /// V2: tags.
-  Future<void> _editTags(BuildContext context, EntryBundle bundle) async {
-    final services = context.read<Services>();
-    final controller = TextEditingController();
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-        ),
-        child: StatefulBuilder(
-          builder: (builderContext, setSheetState) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Tags', style: Theme.of(builderContext).textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  StreamBuilder<List<Tag>>(
-                    stream: services.entries.watchTags(),
-                    builder: (context, snapshot) {
-                      final all = snapshot.data ?? const <Tag>[];
-                      return FutureBuilder<List<Tag>>(
-                        future: services.entries.tagsFor(bundle.entry.id),
-                        builder: (context, mineSnapshot) {
-                          final mine = (mineSnapshot.data ?? const <Tag>[])
-                              .map((t) => t.id)
-                              .toSet();
-                          if (all.isEmpty) {
-                            return const Text('No tags yet. Create one below.');
-                          }
-                          return Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: all.map((tag) {
-                              final selected = mine.contains(tag.id);
-                              return FilterChip(
-                                label: Text(tag.name),
-                                selected: selected,
-                                onSelected: (value) async {
-                                  if (value) {
-                                    await services.entries
-                                        .attachTag(bundle.entry.id, tag.id);
-                                  } else {
-                                    await services.entries
-                                        .detachTag(bundle.entry.id, tag.id);
-                                  }
-                                  setSheetState(() {});
-                                },
-                              );
-                            }).toList(),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: controller,
-                          decoration: const InputDecoration(hintText: 'New tag'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: () async {
-                          final name = controller.text.trim();
-                          if (name.isEmpty) return;
-                          final tag = await services.entries.createTag(name);
-                          await services.entries
-                              .attachTag(bundle.entry.id, tag.id);
-                          controller.clear();
-                          setSheetState(() {});
-                        },
-                        child: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
