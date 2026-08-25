@@ -22,6 +22,14 @@ enum SyncUiState {
   reconnectRequired,
 }
 
+/// Background poll while the app is in the foreground.
+///
+/// 3 minutes is a compromise: frequent enough that two devices in use at the
+/// same time stay close without hammering GitHub (the engine still no-ops
+/// when nothing changed). Launch, network-return, and the Sync button are
+/// independent of this timer.
+const Duration periodicSyncInterval = Duration(minutes: 3);
+
 /// Owns sync state for the whole app: the manual Sync button (G-11), the
 /// status line (G-13), and V2 auto-sync on launch and on network return.
 class SyncController extends ChangeNotifier {
@@ -106,7 +114,7 @@ class SyncController extends ChangeNotifier {
     }
 
     // V3-lite: background sync while the app is running.
-    _periodicTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+    _periodicTimer = Timer.periodic(periodicSyncInterval, (_) {
       if (_config.autoSyncEnabled && canSync) {
         unawaited(syncNow(silent: true));
       }

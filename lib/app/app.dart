@@ -128,33 +128,24 @@ class _DesktopShell extends StatelessWidget {
   }
 }
 
-/// U-10: Home is primary; Archive, Trash and Settings live in the drawer.
+/// U-10: Home / Archive / Trash on a bottom bar so the current workspace is
+/// always visible. Settings stays in the drawer (it is a pushed page).
 class _MobileShell extends StatelessWidget {
   const _MobileShell();
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    const destinations = Workspace.values;
+    final index = destinations.indexOf(state.workspace);
 
     return Scaffold(
       drawer: NavigationDrawer(
-        selectedIndex: Workspace.values.indexOf(state.workspace),
-        onDestinationSelected: (i) {
-          context.read<AppState>().setWorkspace(Workspace.values[i]);
-          Navigator.of(context).pop();
-        },
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(24, 24, 16, 12),
             child: _BrandMark(),
           ),
-          for (final workspace in Workspace.values)
-            NavigationDrawerDestination(
-              icon: Icon(_iconFor(workspace)),
-              selectedIcon: Icon(_selectedIconFor(workspace)),
-              label: Text(workspace.label),
-            ),
-          const Divider(indent: 24, endIndent: 24),
           ListTile(
             leading: const Icon(AppIcons.settings),
             title: const Text('Settings'),
@@ -172,6 +163,19 @@ class _MobileShell extends StatelessWidget {
           isDesktop: false,
           onOpenDrawer: () => Scaffold.of(context).openDrawer(),
         ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index < 0 ? 0 : index,
+        onDestinationSelected: (i) =>
+            context.read<AppState>().setWorkspace(destinations[i]),
+        destinations: [
+          for (final workspace in destinations)
+            NavigationDestination(
+              icon: Icon(_iconFor(workspace)),
+              selectedIcon: Icon(_selectedIconFor(workspace)),
+              label: workspace.label,
+            ),
+        ],
       ),
     );
   }

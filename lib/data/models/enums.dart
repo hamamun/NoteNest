@@ -60,7 +60,8 @@ enum SyncStatus {
 enum CardViewMode {
   grid('grid', 'Grid'),
   list('list', 'List'),
-  compact('compact', 'Compact');
+  compact('compact', 'Compact'),
+  rows('rows', 'Rows');
 
   const CardViewMode(this.value, this.label);
   final String value;

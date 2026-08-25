@@ -11,8 +11,7 @@ import '../../../core/color_x.dart';
 
 /// U-14: one note or list on the home/archive/trash grid.
 ///
-/// The same widget serves all three card view modes (U-11); only padding,
-/// preview length and image treatment change.
+/// Grid / List / Compact are cards. Rows is a dense inbox-style line.
 class EntryCard extends StatefulWidget {
   const EntryCard({
     super.key,
@@ -30,6 +29,7 @@ class EntryCard extends StatefulWidget {
     this.onRestore,
     this.onDeleteForever,
     this.onExport,
+    this.onMore,
   });
 
   final EntryBundle bundle;
@@ -47,6 +47,8 @@ class EntryCard extends StatefulWidget {
   final VoidCallback? onRestore;
   final VoidCallback? onDeleteForever;
   final VoidCallback? onExport;
+  /// Always-visible overflow on mobile (hover actions never fire on touch).
+  final VoidCallback? onMore;
 
   @override
   State<EntryCard> createState() => _EntryCardState();
@@ -66,6 +68,10 @@ class _EntryCardState extends State<EntryCard> {
     final foreground = color.isDefault
         ? theme.colorScheme.onSurface
         : color.foreground(brightness);
+
+    if (widget.viewMode == CardViewMode.rows) {
+      return _row(context, theme, brightness, color);
+    }
 
     final compact = widget.viewMode == CardViewMode.compact;
     final isList = widget.viewMode == CardViewMode.list;
@@ -104,8 +110,6 @@ class _EntryCardState extends State<EntryCard> {
                     _thumbnail(isList),
                   _header(foreground, compact),
                   _body(foreground, compact),
-                  if (widget.bundle.tags.isNotEmpty && !compact)
-                    _tags(theme, foreground),
                   // Keep the action row available in compact mode too. On
                   // desktop it changes from metadata to the action buttons
                   // while the pointer is over the card.
@@ -117,6 +121,163 @@ class _EntryCardState extends State<EntryCard> {
         ),
       ),
     );
+  }
+
+  Widget _row(
+    BuildContext context,
+    ThemeData theme,
+    Brightness brightness,
+    NoteColor color,
+  ) {
+    final scheme = theme.colorScheme;
+    final barColor = color.isDefault
+        ? scheme.outlineVariant.fade(0.6)
+        : color.surface(brightness);
+    final title = _rowTitle();
+    final snippet = _rowSnippet();
+    final conflict = widget.bundle.entry.syncStatus == 'conflict_review';
+    final showMore = widget.onMore != null && !widget.selectionMode;
+    final showHover = _hovered && !widget.selectionMode && widget.onMore == null;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Semantics(
+        selected: widget.selected,
+        label: title,
+        child: Material(
+          color: widget.selected
+              ? scheme.primaryContainer.fade(0.45)
+              : scheme.surface,
+          child: InkWell(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  Container(width: 4, color: barColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              if (widget.bundle.entry.isPinned) ...[
+                                Icon(
+                                  AppIcons.pin,
+                                  size: 13,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              if (widget.bundle.isChecklist) ...[
+                                Icon(
+                                  AppIcons.newList,
+                                  size: 13,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              if (!color.isDefault) ...[
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: barColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (conflict)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Icon(
+                                    AppIcons.conflict,
+                                    size: 14,
+                                    color: scheme.error,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            snippet,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (showHover)
+                    _hoverActions(scheme.onSurface)
+                  else ...[
+                    Text(
+                      AppTime.relative(widget.bundle.entry.updatedAt),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant.fade(0.9),
+                      ),
+                    ),
+                    if (showMore)
+                      AppIconButton(
+                        icon: AppIcons.more,
+                        label: 'More actions',
+                        iconSize: 18,
+                        onPressed: widget.onMore,
+                      )
+                    else
+                      const SizedBox(width: 12),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _rowTitle() {
+    final title = widget.bundle.entry.title.trim();
+    if (title.isNotEmpty) return title;
+    final snippet = _rowSnippet();
+    if (snippet == 'Empty note' || snippet == 'Empty list') return 'Untitled';
+    return snippet;
+  }
+
+  String _rowSnippet() {
+    if (widget.bundle.isChecklist) {
+      if (widget.bundle.lines.isEmpty) return 'Empty list';
+      final first = widget.bundle.lines.first;
+      final prefix = first.checked ? '☑ ' : '☐ ';
+      return '$prefix${first.text}';
+    }
+    final body = widget.bundle.entry.body.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (body.isEmpty) return 'Empty note';
+    return body;
   }
 
   Widget _thumbnail(bool isList) {
@@ -264,32 +425,6 @@ class _EntryCardState extends State<EntryCard> {
     );
   }
 
-  Widget _tags(ThemeData theme, Color foreground) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: widget.bundle.tags
-            .take(3)
-            .map(
-              (tag) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: foreground.fade(0.10),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  tag.name,
-                  style: TextStyle(fontSize: 10.5, color: foreground),
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
   /// U-05: hover actions on desktop, quiet metadata otherwise.
   Widget _footer(ThemeData theme, Color foreground) {
     final showActions = _hovered && !widget.selectionMode;
@@ -321,6 +456,22 @@ class _EntryCardState extends State<EntryCard> {
           AppTime.relative(widget.bundle.entry.updatedAt),
           style: TextStyle(fontSize: 11, color: foreground.fade(0.55)),
         ),
+        if (widget.onMore != null && !widget.selectionMode)
+          Tooltip(
+            message: 'More actions',
+            child: Semantics(
+              button: true,
+              label: 'More actions',
+              child: InkWell(
+                onTap: widget.onMore,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(AppIcons.more, size: 18, color: foreground.fade(0.7)),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

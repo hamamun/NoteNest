@@ -149,27 +149,6 @@ class AppSettings extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-/// V2: tags.
-class Tags extends Table {
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  IntColumn get createdAt => integer()();
-  IntColumn get updatedAt => integer()();
-  BoolColumn get localChanged => boolean().withDefault(const Constant(true))();
-
-  @override
-  Set<Column<Object>> get primaryKey => {id};
-}
-
-class EntryTags extends Table {
-  TextColumn get entryId => text()();
-  TextColumn get tagId => text()();
-  IntColumn get createdAt => integer()();
-
-  @override
-  Set<Column<Object>> get primaryKey => {entryId, tagId};
-}
-
 /// V3: local note history. Written before each destructive content change.
 class EntryRevisions extends Table {
   TextColumn get id => text()();
@@ -203,8 +182,6 @@ class Devices extends Table {
     Tombstones,
     SyncConfigs,
     AppSettings,
-    Tags,
-    EntryTags,
     EntryRevisions,
     Devices,
   ],
@@ -216,7 +193,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -230,7 +207,10 @@ class AppDatabase extends _$AppDatabase {
           );
         },
         onUpgrade: (m, from, to) async {
-          // D-08: migrations land here as the schema evolves.
+          if (from < 2) {
+            await customStatement('DROP TABLE IF EXISTS entry_tags');
+            await customStatement('DROP TABLE IF EXISTS tags');
+          }
           await _createIndexes();
         },
         beforeOpen: (details) async {

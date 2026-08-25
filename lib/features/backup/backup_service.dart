@@ -199,7 +199,6 @@ class BackupService {
         archivedAt: bundle.entry.archivedAt,
         trashedAt: bundle.entry.trashedAt,
         imageIds: bundle.images.map((i) => i.id).toList(),
-        tags: bundle.tags.map((t) => t.name).toList(),
       );
 
       // B-09: notes/ and lists/ are separate folders inside the archive.
@@ -344,11 +343,6 @@ class MarkdownFolderService {
         buffer.writeln(ChecklistMatcher.toMarkdownTasks(bundle.lines));
       } else {
         buffer.writeln(bundle.entry.body);
-      }
-      if (bundle.tags.isNotEmpty) {
-        buffer
-          ..writeln()
-          ..writeln(bundle.tags.map((t) => '#${t.name}').join(' '));
       }
 
       final file = File('$folderPath/$safe.md');

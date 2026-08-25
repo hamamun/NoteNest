@@ -17,13 +17,11 @@ class EntryBundle {
     required this.entry,
     required this.lines,
     required this.images,
-    required this.tags,
   });
 
   final Entry entry;
   final List<ChecklistLine> lines;
   final List<EntryImage> images;
-  final List<Tag> tags;
 
   EntryType get type => EntryType.parse(entry.type);
   EntryLocation get location => EntryLocation.parse(entry.location);
@@ -59,7 +57,6 @@ class EntryRepository {
     EntryFilter filter = EntryFilter.all,
     SortMode sort = SortMode.recentlyEdited,
     String query = '',
-    String? tagId,
   }) {
     final select = _db.select(_db.entries)
       ..where((t) => t.location.equals(workspace.location.value));
@@ -86,15 +83,7 @@ class EntryRepository {
     ];
     select.orderBy(orderBy);
 
-    return select.watch().asyncMap((rows) async {
-      var bundles = await _bundleAll(rows);
-      if (tagId != null) {
-        bundles = bundles
-            .where((b) => b.tags.any((t) => t.id == tagId))
-            .toList(growable: false);
-      }
-      return bundles;
-    });
+    return select.watch().asyncMap((rows) => _bundleAll(rows));
   }
 
   List<OrderClauseGenerator<$EntriesTable>> _orderFor(SortMode sort) {
@@ -181,8 +170,7 @@ class EntryRepository {
         ? await _linesFor(entry.id)
         : const <ChecklistLine>[];
     final images = await imagesFor(entry.id);
-    final tags = await tagsFor(entry.id);
-    return EntryBundle(entry: entry, lines: lines, images: images, tags: tags);
+    return EntryBundle(entry: entry, lines: lines, images: images);
   }
 
   Future<List<ChecklistLine>> _linesFor(String entryId) async {
@@ -198,15 +186,6 @@ class EntryRepository {
             ..where((t) => t.entryId.equals(entryId) & t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
           .get();
-
-  Future<List<Tag>> tagsFor(String entryId) async {
-    final query = _db.select(_db.entryTags).join([
-      innerJoin(_db.tags, _db.tags.id.equalsExp(_db.entryTags.tagId)),
-    ])
-      ..where(_db.entryTags.entryId.equals(entryId));
-    final rows = await query.get();
-    return rows.map((r) => r.readTable(_db.tags)).toList();
-  }
 
   // ---------------------------------------------------------------------
   // Create / update
@@ -504,7 +483,6 @@ class EntryRepository {
 
       await (_db.delete(_db.checklistItems)..where((t) => t.entryId.equals(id))).go();
       await (_db.delete(_db.entryRevisions)..where((t) => t.entryId.equals(id))).go();
-      await (_db.delete(_db.entryTags)..where((t) => t.entryId.equals(id))).go();
       await (_db.update(_db.entryImages)..where((t) => t.entryId.equals(id)))
           .write(EntryImagesCompanion(deletedAt: Value(now)));
     });
@@ -551,6 +529,13 @@ class EntryRepository {
   Future<void> restoreAll(Iterable<String> ids) async {
     for (final id in ids) {
       await restoreFromTrash(id);
+    }
+  }
+
+  /// Bulk unarchive used by the Archive selection toolbar.
+  Future<void> unarchiveAll(Iterable<String> ids) async {
+    for (final id in ids) {
+      await restoreFromArchive(id);
     }
   }
 
@@ -665,62 +650,6 @@ class EntryRepository {
       id: entryId,
       title: revision.title,
       body: revision.body,
-    );
-  }
-
-  // ---------------------------------------------------------------------
-  // V2: tags
-  // ---------------------------------------------------------------------
-
-  Stream<List<Tag>> watchTags() => (_db.select(_db.tags)
-        ..orderBy([(t) => OrderingTerm(expression: t.name.lower())]))
-      .watch();
-
-  Future<Tag> createTag(String name) async {
-    final trimmed = name.trim();
-    final existing = await (_db.select(_db.tags)
-          ..where((t) => t.name.lower().equals(trimmed.toLowerCase())))
-        .getSingleOrNull();
-    if (existing != null) return existing;
-
-    final now = AppTime.nowMs();
-    final tag = TagsCompanion.insert(
-      id: Ulid.generate(),
-      name: trimmed,
-      createdAt: now,
-      updatedAt: now,
-    );
-    await _db.into(_db.tags).insert(tag);
-    return (await (_db.select(_db.tags)..where((t) => t.id.equals(tag.id.value)))
-        .getSingle());
-  }
-
-  Future<void> attachTag(String entryId, String tagId) async {
-    await _db.into(_db.entryTags).insertOnConflictUpdate(
-          EntryTagsCompanion.insert(
-            entryId: entryId,
-            tagId: tagId,
-            createdAt: AppTime.nowMs(),
-          ),
-        );
-    await _updateMetadata(entryId, const EntriesCompanion());
-  }
-
-  Future<void> detachTag(String entryId, String tagId) async {
-    await (_db.delete(_db.entryTags)
-          ..where((t) => t.entryId.equals(entryId) & t.tagId.equals(tagId)))
-        .go();
-    await _updateMetadata(entryId, const EntriesCompanion());
-  }
-
-  Future<void> deleteTag(String tagId) async {
-    await (_db.delete(_db.entryTags)..where((t) => t.tagId.equals(tagId))).go();
-    await (_db.delete(_db.tags)..where((t) => t.id.equals(tagId))).go();
-  }
-
-  Future<void> renameTag(String tagId, String name) async {
-    await (_db.update(_db.tags)..where((t) => t.id.equals(tagId))).write(
-      TagsCompanion(name: Value(name.trim()), updatedAt: Value(AppTime.nowMs())),
     );
   }
 
@@ -891,7 +820,6 @@ class EntryRepository {
           .go();
       await (_db.delete(_db.entryRevisions)..where((t) => t.entryId.equals(entryId)))
           .go();
-      await (_db.delete(_db.entryTags)..where((t) => t.entryId.equals(entryId))).go();
       await (_db.delete(_db.entryImages)..where((t) => t.entryId.equals(entryId)))
           .go();
       await (_db.delete(_db.entries)..where((t) => t.id.equals(entryId))).go();

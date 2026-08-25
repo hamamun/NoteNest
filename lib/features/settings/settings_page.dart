@@ -13,7 +13,6 @@ import 'appearance_page.dart';
 import 'backup_settings_page.dart';
 import 'lock_settings_page.dart';
 import 'sync_settings_page.dart';
-import 'tags_page.dart';
 
 /// SET-13: the settings hub.
 ///
@@ -84,13 +83,6 @@ class SettingsPage extends StatelessWidget {
                 ),
                 value: settings.markdownPreview,
                 onChanged: settings.setMarkdownPreview,
-              ),
-              ListTile(
-                leading: const Icon(AppIcons.tag),
-                title: const Text('Tags'),
-                subtitle: const Text('Create, rename and delete tags'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _push(context, const TagsPage()),
               ),
 
               _section(context, 'Privacy'),
