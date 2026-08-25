@@ -51,6 +51,7 @@ class AppIcons {
   static const IconData export = Icons.download_outlined;
   static const IconData settings = Icons.settings_outlined;
   static const IconData more = Icons.more_vert;
+  static const IconData menu = Icons.menu;
   static const IconData back = Icons.arrow_back;
   static const IconData history = Icons.history;
   static const IconData home = Icons.lightbulb_outline;
