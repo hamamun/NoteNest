@@ -14,7 +14,6 @@ import '../../app/screen_awake.dart';
 import '../../app/services.dart';
 import '../../app/theme.dart';
 import '../../core/time.dart';
-import '../../data/db/database.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/checklist_matcher.dart';
 import '../../data/repositories/entry_repository.dart';
