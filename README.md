@@ -41,7 +41,8 @@ bash tool/setup.sh
 
 The script runs `flutter create` for Windows + Android, restores the NoteNest
 source over Flutter's templates, adds the Android INTERNET permission, fetches
-packages, generates the Drift database code, then analyzes and tests.
+packages, generates the Drift database code and the launcher icons, then
+analyzes and tests.
 
 If you prefer to do it by hand:
 
@@ -50,6 +51,8 @@ flutter create . --project-name notenest --org com.notenest --platforms=windows,
 git checkout -- lib pubspec.yaml analysis_options.yaml test   # undo template overwrites
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs      # REQUIRED: generates database.g.dart
+dart run flutter_launcher_icons                              # REQUIRED: app icon (Windows + Android)
+cp assets/icon/app_icon.ico windows/runner/resources/app_icon.ico   # multi-size Windows icon
 flutter analyze
 flutter test
 ```
@@ -57,6 +60,21 @@ flutter test
 > `dart run build_runner build` is not optional. Drift generates
 > `lib/data/db/database.g.dart` from the table definitions, and the app will
 > not compile until it exists.
+
+## App icon
+
+The launcher icon (an "N" monogram of pastel sticky-note bars on the brand
+blue) lives in `assets/icon/`:
+
+- `app_icon.png` — 1024×1024 master used for every platform
+- `app_icon_adaptive_fg.png` — Android adaptive-icon foreground (monogram
+  pre-scaled into the 66% safe zone)
+- `app_icon.ico` — multi-size Windows icon (16→256 px) copied over the
+  generated one so the taskbar/Start icon stays crisp
+
+`flutter create` regenerates the `windows/` and `android/` folders with
+Flutter's default icons, so re-run `dart run flutter_launcher_icons` (or the
+setup script) after recreating them.
 
 ## Run
 

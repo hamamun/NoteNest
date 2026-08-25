@@ -34,6 +34,15 @@ flutter pub get
 step "Generating the Drift database code"
 dart run build_runner build --delete-conflicting-outputs
 
+step "Generating the launcher icons (Windows + Android)"
+dart run flutter_launcher_icons
+# Replace the generated .ico with the committed multi-size one so the icon
+# stays crisp at 16/24/32 px taskbar and Start-menu sizes.
+if [ -f "assets/icon/app_icon.ico" ] && [ -d "windows/runner/resources" ]; then
+  cp assets/icon/app_icon.ico windows/runner/resources/app_icon.ico
+  echo "  windows/runner/resources/app_icon.ico updated"
+fi
+
 step "Analyzing"
 flutter analyze || echo "  (analyzer reported issues - review above)"
 
