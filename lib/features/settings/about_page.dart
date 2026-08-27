@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/brand.dart';
 import '../../app/icons.dart';
 import '../../app/services.dart';
+import '../../core/color_x.dart';
 import '../../core/logging.dart';
 
 /// Settings > About. Also exposes the redacted log (SEC-08) so a failing sync
@@ -33,18 +35,7 @@ class AboutPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      AppIcons.home,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
+                  const AppBrandIcon(size: 52),
                   const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +139,18 @@ class AboutPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 48),
+              Center(
+                child: Text(
+                  'created by HAM',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    letterSpacing: 0.6,
+                    color: theme.colorScheme.onSurface.fade(0.18),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

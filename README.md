@@ -66,7 +66,9 @@ flutter test
 The launcher icon (an "N" monogram of pastel sticky-note bars on the brand
 blue) lives in `assets/icon/`:
 
-- `app_icon.png` — 1024×1024 master used for every platform
+- `app_icon.png` — 1024×1024 design master
+- `app_icon_ui.png` — same art with a transparent field, used inside the app
+- `app_icon_launcher.png` — full-bleed blue square for Windows/Android mipmaps
 - `app_icon_adaptive_fg.png` — Android adaptive-icon foreground (monogram
   pre-scaled into the 66% safe zone)
 - `app_icon.ico` — multi-size Windows icon (16→256 px) copied over the
@@ -74,7 +76,8 @@ blue) lives in `assets/icon/`:
 
 `flutter create` regenerates the `windows/` and `android/` folders with
 Flutter's default icons, so re-run `dart run flutter_launcher_icons` (or the
-setup script) after recreating them.
+setup script) after recreating them. Then rebuild — Windows also caches the
+old icon on the taskbar until you unpin NoteNest or restart Explorer.
 
 ## Run
 
