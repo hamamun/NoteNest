@@ -148,7 +148,18 @@ class AboutPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 48),
+              Center(
+                child: Text(
+                  'created by HAM',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    letterSpacing: 0.6,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.18),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
