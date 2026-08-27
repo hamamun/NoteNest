@@ -3,17 +3,17 @@ AppName=NoteNest
 AppVersion=1.0.0
 DefaultDirName={localappdata}\NoteNest
 DefaultGroupName=NoteNest
-OutputDir=dist
+OutputDir=..\dist
 OutputBaseFilename=NoteNest-Setup-1.0.0
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=assets\icon\app_icon.ico
+SetupIconFile=..\assets\icon\app_icon.ico
 UninstallDisplayIcon={app}\notenest.exe
 PrivilegesRequired=lowest
 
 [Files]
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\NoteNest"; Filename: "{app}\notenest.exe"
