@@ -1,0 +1,125 @@
+name: "Bug report"
+description: "Report something that crashes, loses data, or syncs wrongly"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Bugs involving sync or data are usually reproducible
+        from three things: the version, the platform, and what the GitHub repo
+        actually contains.
+
+        > [!IMPORTANT]
+        > **Never paste a GitHub token, backup passphrase, or someone else's note
+        > body into this form.** Redact them before uploading any log or screenshot.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the behaviour you saw, in plain words.
+      placeholder: |
+        I deleted a note on Windows while my phone was offline. After the phone
+        synced, the note was back.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The note stays deleted on every device.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shortest path you have found. Numbers help.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Windows x64
+        - Android
+        - Built from source (other)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: NoteNest version
+      description: Settings → About (for example `1.0.0+1`)
+      placeholder: "1.0.0+1"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / device
+      placeholder: "Windows 11 23H2 · Pixel 7a, Android 14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sync
+    attributes:
+      label: Was GitHub sync enabled?
+      options:
+        - "No — offline only"
+        - "Yes, sync configured"
+        - "Yes, and it failed / showed an error"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repo-state
+    attributes:
+      label: Relevant state in your sync repository
+      description: |
+        If the bug involves sync, paste the front matter of the affected
+        `notes/<id>.md` file and the latest commit that touched it.
+        Remove the token, and replace the body text with `[...]` if the note is private.
+      render: text
+      placeholder: |
+        ---
+        id: 01JZ8Q2M7X...
+        type: checklist
+        title: Packing
+        updated_at: 2026-08-27T09:14:02Z
+        ---
+        [...]
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Settings → About → Diagnostics → *Copy log*. The app redacts tokens and
+        passphrases, but please re-check before pasting.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for this bug
+          required: true
+        - label: I removed any token, passphrase or private note text from the report
+          required: true
+        - label: I can reproduce it on a recent build (or noted otherwise above)
+          required: false

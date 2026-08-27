@@ -1,7 +1,13 @@
 name: notenest
-description: NoteNest - a local-first notes and checklists app that syncs through a private GitHub repository.
+description: >-
+  NoteNest - a local-first notes and checklists app for Windows and Android
+  that syncs through a private GitHub repository. No account, no server,
+  no telemetry.
 publish_to: "none"
 version: 1.0.0+1
+repository: https://github.com/hamamun/NoteNest
+homepage: https://github.com/hamamun/NoteNest#readme
+issue_tracker: https://github.com/hamamun/NoteNest/issues
 
 # Works with any Flutter 3.22 or newer, including the current stable.
 # Version-sensitive APIs were deliberately avoided:

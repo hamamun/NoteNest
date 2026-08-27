@@ -1,0 +1,46 @@
+# Normalize line endings so the setup scripts survive a checkout on any OS.
+*                 text=auto
+
+# Text files
+*.md              text
+*.yaml            text
+*.yml             text
+*.json            text
+*.dart            text
+*.xml             text
+*.gradle          text
+*.properties      text
+
+# Shell scripts must stay LF — CRLF breaks them on Linux and macOS.
+*.sh              text eol=lf
+.gitignore        text
+.editorconfig     text
+
+# Windows-only tooling: keep CRLF so Notepad and Inno Setup read them sanely.
+*.ps1             text eol=crlf
+*.iss             text eol=crlf
+*.bat             text eol=crlf
+*.cmd             text eol=crlf
+
+# Binary — never diff or three-way-merge these
+*.png             binary
+*.jpg             binary
+*.jpeg            binary
+*.gif             binary
+*.ico             binary
+*.icns            binary
+*.zip             binary
+*.ttf             binary
+*.otf             binary
+*.pdf             binary
+*.exe             binary
+*.apk             binary
+*.aab             binary
+*.jar             binary
+*.sqlite          binary
+*.db              binary
+
+# Generated code: mark as generated so GitHub collapses it in diffs.
+**/*.g.dart       text eol=lf linguist-generated
+**/*.freezed.dart text eol=lf linguist-generated
+**/*.mocks.dart   text eol=lf linguist-generated

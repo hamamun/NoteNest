@@ -1,0 +1,16 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem — report it privately
+    url: https://github.com/hamamun/NoteNest/security/advisories/new
+    about: >-
+      Do not open a public issue for anything that could expose a user's notes,
+      GitHub token, or PIN. See SECURITY.md.
+  - name: How sync and deletes work
+    url: https://github.com/hamamun/NoteNest#how-deletes-stay-deleted
+    about: Read this before reporting "my deleted note came back" or "it created a conflict copy".
+  - name: Setting up GitHub sync
+    url: https://github.com/hamamun/NoteNest#setting-up-sync
+    about: Token scopes, private-repository requirement, and the repository layout.
+  - name: Build from source
+    url: https://github.com/hamamun/NoteNest#build-from-source
+    about: The setup script, and the manual command list if you prefer typing it yourself.

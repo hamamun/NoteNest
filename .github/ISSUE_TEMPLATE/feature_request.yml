@@ -1,0 +1,89 @@
+name: "Feature request"
+description: "Propose something new, or a change to how something works"
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        NoteNest has a small, deliberate feature surface: local-first, sync via a
+        private GitHub repo, no account. Ideas that fit that shape get picked up
+        fastest. Ideas that fight it are still worth writing down — they help
+        explain why the boundaries are where they are.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The pain, not the solution. A concrete story beats a category.
+      placeholder: |
+        I keep a shared shopping list with my partner, so I find myself re-entering
+        the same items on the phone after editing on the desktop.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: Sketch the flow in Settings → … → Done. Rough is fine.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      placeholder: Export the Markdown folder and share it another way — but it goes stale immediately.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      multiple: true
+      options:
+        - Editing / markdown
+        - Checklists
+        - Images
+        - Search, filters, sorting
+        - Sync and conflict handling
+        - Backup and restore
+        - Export (PDF / TXT)
+        - Privacy lock
+        - Appearance
+        - Platform support (iOS / macOS / Linux)
+        - Tooling / build / CI
+    validations:
+      required: true
+
+  - type: dropdown
+    id: localfirst
+    attributes:
+      label: Can it work offline?
+      description: Anything needing a server NoteNest does not control is unlikely to land in v1.x.
+      options:
+        - "Yes — fully local"
+        - "Yes — using the existing GitHub repository"
+        - "No — it would need a new service"
+    validations:
+      required: true
+
+  - type: textarea
+    id: help
+    attributes:
+      label: Would you build it?
+      description: >
+        Not a requirement. If yes, say which files you expect to touch
+        (lib/features/…, lib/data/repositories/…) and open a draft PR —
+        CONTRIBUTING.md lists the two invariants to preserve.
+      placeholder: "Happy to take a stab at the PDF font auto-download part."
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues (and the Roadmap in the README) for this idea
+          required: true
+        - label: I understand this is a one-person volunteer project with no delivery dates
+          required: true
