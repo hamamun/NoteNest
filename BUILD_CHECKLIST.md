@@ -442,8 +442,8 @@ Stack: Flutter · Dart · Drift/SQLite · GitHub Contents API · flutter_secure_
 - [~] **U-05** MUST desktop card hover actions: color, archive, trash, more.
 - [~] **U-06** MUST desktop multi-select toolbar: selected count, Export, Archive, Trash, Color.
 - [ ] **U-07** LATER Ctrl+K command palette and full keyboard shortcuts.
-- [~] **U-08** MUST mobile: top bar `Search | View icon | Sync icon | ⋮`, filter chips All/Notes/Lists, card list, FAB `+`.
-- [~] **U-09** MUST FAB opens a bottom sheet with **New Note** / **New List** (never two separate FABs).
+- [~] **U-08** MUST mobile: top bar `Search | View icon | Sync icon | ⋮`, filter chips All/Notes/Lists, card list, bottom bar `Home | Archive | Trash | +`. No overlay FAB.
+- [~] **U-09** MUST the trailing `+` on the mobile bottom bar opens a bottom sheet with **New Note** / **New List** (never two separate create buttons, never a fourth selected tab). Desktop keeps **New** in the top bar.
 - [~] **U-10** MUST mobile Archive/Trash/Settings reachable from drawer or ⋮, Home stays primary.
 - [~] **U-11** MUST card view modes Grid/Masonry (default), List, Compact — applied to Home, Archive, Trash, and search results.
 - [~] **U-12** MUST card view mode saved in `settings.card_view_mode`, per-device, not synced.

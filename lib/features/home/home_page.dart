@@ -17,6 +17,7 @@ import '../item/item_page.dart';
 import '../lock/pin_lock_controller.dart';
 import '../lock/pin_pad.dart';
 import '../sync/sync_controller.dart';
+import 'create_flow.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/entry_card.dart';
 
@@ -64,11 +65,6 @@ class _HomePageState extends State<HomePage> {
       appBar: state.selectionMode
           ? _selectionAppBar(context, state)
           : _normalAppBar(context, state, settings),
-      floatingActionButton: state.workspace == Workspace.home &&
-              !state.selectionMode &&
-              !widget.isDesktop
-          ? _fab(context)
-          : null,
       body: Column(
         children: [
           _filterRow(context, state),
@@ -140,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                     searching: state.query.trim().isNotEmpty,
                     filtered: state.filter != EntryFilter.all,
                     onCreate: state.workspace == Workspace.home
-                        ? () => _create(context, EntryType.note)
+                        ? () => createAndOpen(context, EntryType.note)
                         : null,
                   );
                 }
@@ -233,7 +229,7 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: FilledButton.icon(
-              onPressed: () => _showCreateOptions(context),
+              onPressed: () => showCreateOptions(context),
               icon: const Icon(AppIcons.newItem, size: 18),
               label: const Text('New'),
             ),
@@ -468,7 +464,7 @@ class _HomePageState extends State<HomePage> {
 
     if (mode == CardViewMode.rows) {
       return ListView.separated(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
         itemCount: bundles.length,
         separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1),
         itemBuilder: (context, index) => cardFor(bundles[index]),
@@ -477,7 +473,7 @@ class _HomePageState extends State<HomePage> {
 
     if (mode == CardViewMode.list) {
       return ListView.separated(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 96),
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
         itemCount: bundles.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) => cardFor(bundles[index]),
@@ -492,7 +488,7 @@ class _HomePageState extends State<HomePage> {
     };
 
     return MasonryGridView.count(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 96),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
       crossAxisCount: columns,
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
@@ -504,97 +500,6 @@ class _HomePageState extends State<HomePage> {
   // ---------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------
-
-  Widget _fab(BuildContext context) {
-    // U-09: one FAB that opens a sheet, never two buttons.
-    return FloatingActionButton(
-      onPressed: () => _showCreateOptions(context),
-      tooltip: 'New note or list',
-      child: const Icon(AppIcons.newItem),
-    );
-  }
-
-  Future<void> _showCreateOptions(BuildContext context) async {
-    final lock = context.read<PinLockController>();
-    if (lock.shouldHideNotes && lock.shouldHideLists) {
-      final unlocked = await _unlockIfNeeded(context, lock);
-      if (!unlocked || !context.mounted) return;
-    }
-
-    if (!context.mounted) return;
-    showActionSheet(
-      context,
-      title: 'Create',
-      actions: [
-        SheetAction(
-          icon: AppIcons.newNote,
-          label: 'New note',
-          onTap: () => _create(context, EntryType.note),
-        ),
-        SheetAction(
-          icon: AppIcons.newList,
-          label: 'New list',
-          onTap: () => _create(context, EntryType.checklist),
-        ),
-      ],
-    );
-  }
-
-  Future<bool> _unlockIfNeeded(
-    BuildContext context,
-    PinLockController lock,
-  ) async {
-    if (!lock.shouldHideNotes && !lock.shouldHideLists) return true;
-    var ok = false;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          contentPadding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
-          content: SizedBox(
-            width: 360,
-            child: PinPad(
-              title: 'Enter PIN',
-              subtitle: 'Unlock to continue',
-              onSubmit: (pin) async {
-                final unlocked = await lock.unlockWithPin(pin);
-                if (unlocked && dialogContext.mounted) {
-                  ok = true;
-                  Navigator.of(dialogContext).pop();
-                }
-                return unlocked;
-              },
-              footer: TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    return ok;
-  }
-
-  Future<void> _create(BuildContext context, EntryType type) async {
-    final lock = context.read<PinLockController>();
-    final blocked =
-        type.isChecklist ? lock.shouldHideLists : lock.shouldHideNotes;
-    if (blocked) {
-      final unlocked = await _unlockIfNeeded(context, lock);
-      if (!unlocked || !context.mounted) return;
-    }
-
-    final services = context.read<Services>();
-    final id = await services.entries.createEntry(type);
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ItemPage(entryId: id, startInEditMode: true),
-      ),
-    );
-  }
 
   void _open(BuildContext context, String id) {
     Navigator.of(context).push(
