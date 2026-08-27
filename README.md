@@ -419,9 +419,10 @@ Please report security problems privately as described in
 Released under the **MIT License** — see [LICENSE](/LICENSE). You may use,
 copy, modify and re-distribute NoteNest, including commercially.
 
-Two things the license does *not* grant: the **name "NoteNest"** and the **N
+One thing the license does *not* grant: the **name "NoteNest"** and the **N
 monogram artwork**, which may not be used to brand or market a derived product.
-Rename and re-icon your fork — then do with it whatever you like.
+See [TRADEMARK.md](/TRADEMARK.md). Rename and re-icon your fork — then do with
+it whatever you like.
 
 ## Acknowledgements
 

@@ -125,4 +125,4 @@ real-time multi-user collaborative editing, and inline images inside a note body
 By opening a pull request you confirm the contribution is yours to give and is
 offered under the project's [MIT License](/LICENSE), and you agree that the
 name and monogram are **not** licensed to you for branding a derivative, as
-explained in the README.
+set out in [TRADEMARK.md](/TRADEMARK.md).
