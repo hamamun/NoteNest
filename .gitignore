@@ -35,3 +35,23 @@ Thumbs.db
 # Local artefacts
 *.log
 /coverage/
+
+# Release artefacts (produced by tool/windows_installer.iss and flutter build)
+/dist/
+/tool/dist/
+*.exe
+*.apk
+*.aab
+!assets/**/*.ico
+
+# Signing material must never be committed
+*.jks
+*.keystore
+*.keystore.properties
+key.properties
+android/app/upload-keystore.*
+
+# Flutter tooling leftovers
+.flutter/
+coverage/
+*.tmp
