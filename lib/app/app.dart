@@ -8,6 +8,7 @@ import '../features/home/home_page.dart';
 import '../features/lock/lock_lifecycle.dart';
 import '../features/settings/settings_page.dart';
 import '../state/app_state.dart';
+import 'brand.dart';
 import 'icons.dart';
 import 'theme.dart';
 
@@ -88,7 +89,7 @@ class _DesktopShell extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: showLabels
                   ? const _BrandMark()
-                  : const Icon(AppIcons.home, size: 26),
+                  : const AppBrandIcon(size: 28),
             ),
             trailing: Expanded(
               child: Align(
@@ -321,19 +322,10 @@ class _BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Icon(AppIcons.home, size: 18, color: scheme.onPrimaryContainer),
-        ),
+        const AppBrandIcon(size: 30),
         const SizedBox(width: 10),
         Text(
           'NoteNest',

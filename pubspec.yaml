@@ -72,19 +72,21 @@ flutter_launcher_icons:
   # after adding the iOS platform via flutter create.
   ios: false
   remove_alpha_ios: true
-  image_path: "assets/icon/app_icon.png"
-  # Android 8+ adaptive icons: blue field from the icon itself, with the
-  # monogram pre-scaled into the 66% safe zone as the foreground layer.
-  adaptive_icon_background: "assets/icon/app_icon.png"
+  # Full-bleed blue square (no black halo). The rounded master is app_icon.png.
+  image_path: "assets/icon/app_icon_launcher.png"
+  # Android 8+ adaptive icons: solid brand blue + the pre-scaled monogram.
+  adaptive_icon_background: "#3466A0"
   adaptive_icon_foreground: "assets/icon/app_icon_adaptive_fg.png"
   adaptive_icon_foreground_inset: 0
   windows:
     generate: true
-    image_path: "assets/icon/app_icon.png"
+    image_path: "assets/icon/app_icon_launcher.png"
     icon_size: 256
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/app_icon_ui.png
   # To get Bengali, Hindi, Arabic or CJK text in exported PDFs, drop the two
   # font files into assets/fonts/ and uncomment these four lines:
   # fonts:
