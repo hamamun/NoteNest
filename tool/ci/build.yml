@@ -117,10 +117,19 @@ jobs:
           dart run flutter_launcher_icons
 
       - name: Add the INTERNET permission
+        # Android grants INTERNET automatically at install, but only when the
+        # manifest declares it. Flutter's template leaves it out of the MAIN
+        # manifest, so without this step the release APK has no network and
+        # sync fails with "failed host lookup" (errno 7). Fail loudly rather
+        # than ship a broken APK.
         run: |
           M=android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.INTERNET' "$M" || sed -i '0,/<manifest/s//<manifest\n    <uses-permission android:name="android.permission.INTERNET" \/>/' "$M"
-          grep -n 'INTERNET' "$M"
+          test -f "$M" || { echo "manifest missing: $M" >&2; exit 1; }
+          if ! grep -q 'android.permission.INTERNET' "$M"; then
+            sed -i '0,/<manifest/s//<manifest\n    <uses-permission android:name="android.permission.INTERNET" \/>/' "$M"
+          fi
+          grep -n 'android.permission.INTERNET' "$M" \
+            || { echo "ERROR: INTERNET permission missing from $M" >&2; exit 1; }
 
       - name: Build release APK
         run: flutter build apk --release

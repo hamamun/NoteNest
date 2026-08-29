@@ -30,16 +30,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Step "Adding the INTERNET permission for release builds"
+# Android grants INTERNET automatically at install, but only when the
+# manifest declares it. Flutter's template leaves it out of the MAIN
+# manifest (debug/profile builds add it themselves), so a release APK
+# built without this step has no network at all. Patch + verify so a
+# missing permission can never ship silently.
 $manifest = "android\app\src\main\AndroidManifest.xml"
-if (Test-Path $manifest) {
-  $content = Get-Content $manifest -Raw
-  if ($content -notmatch 'android.permission.INTERNET') {
-    $content = $content -replace '(<manifest[^>]*>)', "`$1`n    <uses-permission android:name=`"android.permission.INTERNET`" />"
-    Set-Content $manifest $content -NoNewline
-    Write-Host "  added INTERNET permission"
-  } else {
-    Write-Host "  already present"
-  }
+if (-not (Test-Path $manifest)) {
+  throw "Manifest not found at $manifest - run 'flutter create . --platforms=android' first."
+}
+$content = Get-Content $manifest -Raw
+if ($content -notmatch 'android.permission.INTERNET') {
+  $content = $content -replace '(<manifest[^>]*>)', "`$1`n    <uses-permission android:name=`"android.permission.INTERNET`" />"
+  Set-Content $manifest $content -NoNewline
+  Write-Host "  added android.permission.INTERNET"
+} else {
+  Write-Host "  already present"
+}
+if ((Get-Content $manifest -Raw) -match 'android.permission.INTERNET') {
+  Write-Host "  OK: $manifest declares the INTERNET permission"
+} else {
+  throw "Could not add android.permission.INTERNET to $manifest - add it inside <manifest ...> by hand."
 }
 
 Step "Fetching packages"

@@ -193,6 +193,28 @@ flutter build windows          # build\windows\x64\runner\Release\
 flutter build apk --release    # build\app\outputs\flutter-apk\
 ```
 
+### Android: the INTERNET permission
+
+NoteNest syncs over the network, so the Android build declares the
+`android.permission.INTERNET` permission — the same way any standard Android
+app does. It is a *normal* permission: Android grants it automatically at
+install time, so there is **no permission popup**; it just shows up in the
+phone's Settings → Apps → NoteNest → Permissions list.
+
+`tool/setup.sh` and `tool/setup.ps1` add this line to the generated
+`android/app/src/main/AndroidManifest.xml` and verify it. Flutter's template
+only includes it for debug/profile builds — if a release APK is built without
+the setup step, the app has **no network access at all** and sync fails with
+`failed host lookup` / `errno 7` errors. The CI Android job enforces the same
+check, so APKs from GitHub Actions are always fine.
+
+To verify an APK before installing:
+
+```bash
+aapt dump permissions build/app/outputs/flutter-apk/app-release.apk
+# must list: android.permission.INTERNET
+```
+
 Optional Windows installer (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```powershell
