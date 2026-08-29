@@ -193,6 +193,16 @@ flutter build windows          # build\windows\x64\runner\Release\
 flutter build apk --release    # build\app\outputs\flutter-apk\
 ```
 
+> **Building the Android APK the easy way:** if you only want the phone
+> APK and do not want to remember the manifest patch, run
+> `bash tool/build_android.sh` (Linux/macOS) or
+> `powershell -ExecutionPolicy Bypass -File tool\build_android.ps1`
+> (Windows) instead of `flutter build apk --release`. The wrapper script
+> regenerates the `android/` folder, adds and verifies the
+> `INTERNET` permission, fetches packages, generates the database code
+> and launcher icon, then builds the release APK in one go. It prints
+> the exact APK path and the `adb install` command at the end.
+
 ### Android: the INTERNET permission
 
 NoteNest syncs over the network, so the Android build declares the
