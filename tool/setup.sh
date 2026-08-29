@@ -19,13 +19,30 @@ git checkout -- lib pubspec.yaml analysis_options.yaml test 2>/dev/null \
   || echo "  (skipped: not a git checkout)"
 
 step "Adding the INTERNET permission for release builds"
+# Android grants INTERNET automatically at install, but only when the
+# manifest declares it. Flutter's template leaves it out of the MAIN
+# manifest (debug/profile builds add it themselves), so a release APK
+# built without this step has no network at all. Patch + verify so a
+# missing permission can never ship silently.
 MANIFEST="android/app/src/main/AndroidManifest.xml"
-if [ -f "$MANIFEST" ] && ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+if [ ! -f "$MANIFEST" ]; then
+  echo "  ERROR: $MANIFEST not found — run 'flutter create . --platforms=android' first." >&2
+  exit 1
+fi
+if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
   sed -i.bak 's|<manifest\(.*\)>|<manifest\1>\n    <uses-permission android:name="android.permission.INTERNET" />|' "$MANIFEST"
   rm -f "$MANIFEST.bak"
-  echo "  added INTERNET permission"
+  echo "  added android.permission.INTERNET"
 else
-  echo "  already present or manifest missing"
+  echo "  already present"
+fi
+if grep -q "android.permission.INTERNET" "$MANIFEST"; then
+  echo "  OK: $MANIFEST declares the INTERNET permission"
+else
+  echo "  ERROR: could not add android.permission.INTERNET to $MANIFEST" >&2
+  echo "  Add this line inside <manifest ...> by hand, then re-run setup:" >&2
+  echo '    <uses-permission android:name="android.permission.INTERNET" />' >&2
+  exit 1
 fi
 
 step "Fetching packages"

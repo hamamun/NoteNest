@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../../core/logging.dart';
@@ -187,13 +190,58 @@ class GitHubClient {
         ok: false,
         message: 'GitHub did not respond. Check your internet connection.',
       );
+    } on SocketException catch (e) {
+      // DNS failure or the network stack refused the connection.
+      return ConnectionResult(
+        ok: false,
+        message: await _networkFailureHint(e.message),
+      );
+    } on http.ClientException catch (e) {
+      // The http package wraps the socket error above in a ClientException.
+      return ConnectionResult(
+        ok: false,
+        message: await _networkFailureHint(e.message),
+      );
     } catch (e) {
       return ConnectionResult(
         ok: false,
-        message: 'No internet connection, or GitHub is unreachable. '
-            '(${AppLog.redact(e)})',
+        message: 'GitHub is unreachable right now. (${AppLog.redact(e)})',
       );
     }
+  }
+
+  /// Turns a DNS / socket failure into a message the user can act on.
+  ///
+  /// On Android, a release APK built without the INTERNET permission fails
+  /// with exactly this kind of error ("failed host lookup", errno 7) while
+  /// the system still reports an internet connection — see tool/setup.sh.
+  /// Distinguishing "offline" from "permissionless build" turns a cryptic
+  /// stack trace into the right next step.
+  Future<String> _networkFailureHint(String detail) async {
+    var online = false;
+    try {
+      final results = await Connectivity().checkConnectivity();
+      online = results.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      // Connectivity plugin unavailable (e.g. unit tests): stay generic.
+    }
+
+    if (!online) {
+      return 'No internet connection on this device. '
+          'Turn on Wi-Fi or mobile data, then try again.';
+    }
+
+    final isAndroid = !kIsWeb && Platform.isAndroid;
+    if (isAndroid) {
+      return 'Your internet is on, but this phone cannot reach GitHub. '
+          'In a release APK the usual cause is a missing INTERNET '
+          'permission: rebuild with "bash tool/setup.sh" (or install the '
+          'CI-built APK) and reinstall. If it still fails, check Private '
+          'DNS, an ad-blocker, or a VPN on the phone.';
+    }
+    return 'Your internet is on, but GitHub could not be reached. '
+        'Check your firewall, proxy, or VPN settings. '
+        '(${AppLog.redact(detail)})';
   }
 
   // ---------------------------------------------------------------------
