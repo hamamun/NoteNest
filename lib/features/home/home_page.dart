@@ -39,6 +39,11 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
 
+  /// F-02: caches the per-workspace count streams so the "All" chip does not
+  /// re-query (and flicker) on every rebuild.
+  final Map<Workspace, Stream<({int notes, int lists})>> _typeCountStreams =
+      <Workspace, Stream<({int notes, int lists})>>{};
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -376,7 +381,9 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 avatar: _lockAvatar(context, filter),
-                label: Text(filter.label),
+                label: filter == EntryFilter.all
+                    ? _allChipLabel(context, state)
+                    : Text(filter.label),
                 selected: state.filter == filter,
                 onSelected: (_) => context.read<AppState>().setFilter(filter),
                 showCheckmark: false,
@@ -391,6 +398,51 @@ class _HomePageState extends State<HomePage> {
             ),
         ],
       ),
+    );
+  }
+
+  /// The "All" chip shows a plain count of visible items, with no badge or
+  /// background — just a muted number after the label. On Home, PIN-locked
+  /// note/list sections are excluded so the number always matches what is on
+  /// screen; Archive and Trash are never locked, so they show their totals.
+  Widget _allChipLabel(BuildContext context, AppState state) {
+    final services = context.read<Services>();
+    final lock = context.read<PinLockController>();
+    final onHome = state.workspace == Workspace.home;
+    final stream = _typeCountStreams.putIfAbsent(
+      state.workspace,
+      () => services.entries.watchTypeCounts(state.workspace),
+    );
+
+    return StreamBuilder<({int notes, int lists})>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) return const Text('All');
+
+        final showNotes = onHome ? !lock.shouldHideNotes : true;
+        final showLists = onHome ? !lock.shouldHideLists : true;
+        // Fully gated (both locked, nothing visible yet): no number, so a
+        // misleading "0" never shows before the PIN gate is passed.
+        if (!showNotes && !showLists) return const Text('All');
+
+        final total =
+            (showNotes ? data.notes : 0) + (showLists ? data.lists : 0);
+        return Text.rich(
+          TextSpan(
+            text: 'All',
+            children: [
+              TextSpan(
+                text: '  $total',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

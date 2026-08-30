@@ -72,6 +72,10 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      // F-01: Inter everywhere, so notes and lists render identically on
+      // Windows and Android (Flutter's default would otherwise be Segoe UI
+      // on desktop and Roboto on mobile).
+      fontFamily: 'Inter',
       scaffoldBackgroundColor: isDark ? const Color(0xFF17191C) : const Color(0xFFF7F8FA),
       visualDensity: VisualDensity.standard,
       appBarTheme: AppBarTheme(
