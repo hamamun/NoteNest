@@ -157,6 +157,26 @@ class EntryRepository {
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
+  /// Counts notes or lists in [workspace], split by type. Backs the "All"
+  /// chip badge; excluding PIN-locked sections is the caller's job, never the
+  /// query's, so this stays a plain, testable read.
+  Stream<int> watchCountByType(Workspace workspace, EntryType type) {
+    final count = _db.entries.id.count();
+    final query = _db.selectOnly(_db.entries)
+      ..addColumns([count])
+      ..where(_db.entries.location.equals(workspace.location.value) &
+          _db.entries.type.equals(type.value));
+    return query.watchSingle().map((row) => row.read(count) ?? 0);
+  }
+
+  /// Reactive notes + lists counts for [workspace], merged into one stream.
+  Stream<({int notes, int lists})> watchTypeCounts(Workspace workspace) =>
+      _combineLatest2(
+        watchCountByType(workspace, EntryType.note),
+        watchCountByType(workspace, EntryType.checklist),
+        (notes, lists) => (notes: notes, lists: lists),
+      );
+
   Future<List<EntryBundle>> _bundleAll(List<Entry> rows) async {
     final result = <EntryBundle>[];
     for (final row in rows) {
@@ -857,4 +877,39 @@ class EntryRepository {
             t.localChanged.equals(true) &
             t.location.isNotValue(EntryLocation.deleted.value)))
       .get();
+}
+
+/// Merges two streams, emitting the combined value whenever either side emits,
+/// using each side's most recent value. Emits nothing until both have produced
+/// at least one value (so the "All" count never renders a half-loaded total).
+Stream<R> _combineLatest2<A, B, R>(
+  Stream<A> a,
+  Stream<B> b,
+  R Function(A, B) combine,
+) {
+  late final StreamController<R> controller;
+  StreamSubscription<A>? subA;
+  StreamSubscription<B>? subB;
+  A? lastA;
+  B? lastB;
+
+  controller = StreamController<R>(
+    onListen: () {
+      subA = a.listen((value) {
+        lastA = value;
+        final other = lastB;
+        if (other != null) controller.add(combine(value, other));
+      });
+      subB = b.listen((value) {
+        lastB = value;
+        final other = lastA;
+        if (other != null) controller.add(combine(other, value));
+      });
+    },
+    onCancel: () {
+      subA?.cancel();
+      subB?.cancel();
+    },
+  );
+  return controller.stream;
 }
