@@ -40,7 +40,7 @@ UninstallDisplayIcon={app}\notenest.exe
 UninstallDisplayName={#AppName}
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
-ArchitecturesInstallInMode=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 ; Windows 10 and later
 MinVersion=10.0
 LicenseFile=..\LICENSE
