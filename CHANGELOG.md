@@ -9,10 +9,13 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 ## [Unreleased]
 
 ### Added
-- Placeholder for the `v1.1` line: restore-from-backup.
+- Placeholder for the next line: restore-from-backup.
 
-**v1.2 polish: motion, Material You, undo safety**
+## [1.5.0] - 2026-08-31
 
+Polish release: motion, Material You, and an undo safety net.
+
+### Added
 - Shared-element transition: opening a card flies it into the item screen and
   back on pop, skipped for reduced-motion users (MOT-01). Card view switches
   (Grid / List / Compact / Rows) cross-fade, and colour changes on cards and
@@ -110,5 +113,6 @@ Linux runners are deliberately out of scope for this version.
 - Content deleted from the repo can remain in Git history; use encrypted sync
   if that matters to you.
 
-[Unreleased]: https://github.com/hamamun/NoteNest/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hamamun/NoteNest/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/hamamun/NoteNest/compare/v1.0.0...v1.5.0
 [1.0.0]: https://github.com/hamamun/NoteNest/releases/tag/v1.0.0

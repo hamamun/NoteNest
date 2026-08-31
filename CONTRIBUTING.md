@@ -77,7 +77,7 @@ If you touched the entry file format, run the codec test and remember the rule:
 Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). The three
 things that let a maintainer reproduce a sync or data bug are:
 
-- the NoteNest version from *Settings → About* (e.g. `1.0.0+1`)
+- the NoteNest version from *Settings → About* (e.g. `1.5.0+2`)
 - platform and whether sync was enabled
 - what you expected, what happened, and whether the note still exists in the
   GitHub repo (paste the file's front matter, **with the token removed**)

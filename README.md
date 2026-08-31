@@ -96,7 +96,7 @@ Grab the newest build from [**Releases**](https://github.com/hamamun/NoteNest/re
 
 | File | Platform | Install |
 |------|----------|---------|
-| `NoteNest-Setup-1.0.0.exe` | Windows 10/11 x64 | Run it — installs per-user, no admin rights needed |
+| `NoteNest-Setup-1.5.0.exe` | Windows 10/11 x64 | Run it — installs per-user, no admin rights needed |
 | `app-release.apk` | Android 5.0+ (API 21) | Enable "install unknown apps", or sideload with `adb install -r` |
 
 Windows builds are **not code-signed**, so SmartScreen will warn once:
@@ -228,7 +228,7 @@ aapt dump permissions build/app/outputs/flutter-apk/app-release.apk
 Optional Windows installer (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```powershell
-iscc tool\windows_installer.iss    # -> dist\NoteNest-Setup-1.0.0.exe
+iscc tool\windows_installer.iss    # -> dist\NoteNest-Setup-1.5.0.exe
 ```
 
 ### Tests
@@ -387,7 +387,7 @@ Windows caches the old taskbar icon until you unpin NoteNest or restart Explorer
 
 ---
 
-## Limitations (v1.0.0, stated plainly)
+## Limitations (v1.5.0, stated plainly)
 
 - **Restore from backup is not built yet.** A backup is a recovery archive: unzip it and re-import through *Settings → Markdown folder*.
 - **PDF fonts.** PDF export uses a built-in Latin font offline. For Bengali, Hindi, Arabic or CJK glyphs **in exported PDFs**, drop `NotoSans-Regular.ttf` and `NotoSans-Bold.ttf` into `assets/fonts/`, uncomment the four `fonts:` lines in `pubspec.yaml`, and NoteNest picks them up. On-screen text is unaffected — the app renders system fonts fine.

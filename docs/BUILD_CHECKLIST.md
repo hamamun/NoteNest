@@ -506,7 +506,7 @@ Stack: Flutter · Dart · Drift/SQLite · GitHub Contents API · flutter_secure_
 - [~] **BLD-03** MUST Android: no unnecessary permissions; use scoped storage / SAF for export; camera permission only if capture is added (it is LATER).
 - [~] **BLD-04** MUST Windows: local DB and images under the user's app-data directory, not next to the .exe.
 - [~] **BLD-05** MUST `flutter analyze` clean; `dart format` applied.
-- [~] **BLD-06** GAP Version stamp `1.0.0+1` surfaced in Settings > About and written into `backup.json`.
+- [~] **BLD-06** GAP Version stamp `1.5.0+2` surfaced in Settings > About and written into `backup.json`.
 
 ---
 
@@ -582,7 +582,7 @@ These were not specified in either document. I chose a sensible default so the b
 | U-24 | Empty states | five specific states enumerated |
 | A-07 | Touch targets | 48×48 dp minimum, visible desktop focus rings |
 | SET-14 | Theme selector | System / Light / Dark, local-only |
-| BLD-06 | Versioning | `1.0.0+1`, shown in About and embedded in backup.json |
+| BLD-06 | Versioning | `1.5.0+2`, shown in About and embedded in backup.json |
 
 ---
 
