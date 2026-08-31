@@ -54,20 +54,41 @@ class NoteColor {
 }
 
 /// U-23: Material 3 theming, light + dark.
+///
+/// THM-01/THM-02: the palette can also come from the user's wallpaper
+/// (Material You, via [fromScheme]), and the dark theme has a true-black
+/// variant for AMOLED panels.
 class AppTheme {
   AppTheme._();
 
   static const Color _seed = Color(0xFF3B6EA5);
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData light() => _fromScheme(
+        ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.light),
+      );
 
-  static ThemeData _build(Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: _seed,
-      brightness: brightness,
-    );
-    final isDark = brightness == Brightness.dark;
+  /// THM-02: [trueBlack] swaps every dark surface for pure #000000 — pixels
+  /// off on AMOLED panels, so darker blacks *and* less battery. Light theme
+  /// is never affected.
+  static ThemeData dark({bool trueBlack = false}) => _fromScheme(
+        ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.dark),
+        trueBlack: trueBlack,
+      );
+
+  /// THM-01: builds the app theme from a wallpaper-derived Material You
+  /// scheme handed over by `DynamicColorBuilder` in app.dart.
+  static ThemeData fromScheme(ColorScheme scheme, {bool trueBlack = false}) =>
+      _fromScheme(scheme, trueBlack: trueBlack);
+
+  static ThemeData _fromScheme(ColorScheme scheme, {bool trueBlack = false}) {
+    final isDark = scheme.brightness == Brightness.dark;
+    final black = isDark && trueBlack;
+    final scaffold = black
+        ? Colors.black
+        : (isDark ? const Color(0xFF17191C) : const Color(0xFFF7F8FA));
+    final fieldFill = black
+        ? const Color(0xFF101013)
+        : (isDark ? const Color(0xFF24272B) : Colors.white);
 
     return ThemeData(
       useMaterial3: true,
@@ -76,18 +97,18 @@ class AppTheme {
       // Windows and Android (Flutter's default would otherwise be Segoe UI
       // on desktop and Roboto on mobile).
       fontFamily: 'Inter',
-      scaffoldBackgroundColor: isDark ? const Color(0xFF17191C) : const Color(0xFFF7F8FA),
+      scaffoldBackgroundColor: scaffold,
       visualDensity: VisualDensity.standard,
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 1,
-        backgroundColor: isDark ? const Color(0xFF17191C) : const Color(0xFFF7F8FA),
+        backgroundColor: scaffold,
         surfaceTintColor: Colors.transparent,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF24272B) : Colors.white,
+        fillColor: fieldFill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
           borderSide: BorderSide.none,

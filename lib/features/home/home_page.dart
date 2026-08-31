@@ -8,6 +8,7 @@ import '../../app/color_picker.dart';
 import '../../app/icons.dart';
 import '../../app/services.dart';
 import '../../app/sync_button.dart';
+import '../../app/undo_snackbar.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
@@ -141,7 +142,36 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
 
-                return _cards(context, bundles, settings.cardViewMode, state);
+                // MOT-02: cross-fade between Grid / List / Compact / Rows
+                // instead of snapping. Reduced-motion users get an instant
+                // swap.
+                //
+                // The outgoing grid must drop out of the Hero registry for
+                // the overlap window, otherwise the same entry's card exists
+                // twice in this route and the next card→item flight would
+                // hit a duplicate-tag assertion.
+                return AnimatedSwitcher(
+                  duration: MediaQuery.of(context).disableAnimations
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  transitionBuilder: (child, animation) {
+                    final outgoing =
+                        animation.status == AnimationStatus.reverse;
+                    return HeroMode(
+                      enabled: !outgoing,
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey(settings.cardViewMode),
+                    child: _cards(
+                      context,
+                      bundles,
+                      settings.cardViewMode,
+                      state,
+                    ),
+                  ),
+                );
               },
             ),
           ),
@@ -282,11 +312,7 @@ class _HomePageState extends State<HomePage> {
           AppIconButton(
             icon: AppIcons.restore,
             label: 'Restore selected',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.restoreAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
+            onPressed: () => _restoreAllWithUndo(context, state),
           ),
           AppIconButton(
             icon: AppIcons.deleteForever,
@@ -302,20 +328,12 @@ class _HomePageState extends State<HomePage> {
           AppIconButton(
             icon: AppIcons.unarchive,
             label: 'Unarchive selected',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.unarchiveAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
+            onPressed: () => _unarchiveAllWithUndo(context, state),
           ),
           AppIconButton(
             icon: AppIcons.trash,
             label: 'Move selected to trash',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.trashAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
+            onPressed: () => _trashAllWithUndo(context, state),
           ),
         ] else ...[
           AppIconButton(
@@ -326,20 +344,12 @@ class _HomePageState extends State<HomePage> {
           AppIconButton(
             icon: AppIcons.archive,
             label: 'Archive selected',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.archiveAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
+            onPressed: () => _archiveAllWithUndo(context, state),
           ),
           AppIconButton(
             icon: AppIcons.trash,
             label: 'Move selected to trash',
-            onPressed: () async {
-              final services = context.read<Services>();
-              await services.entries.trashAll(state.selected);
-              if (context.mounted) context.read<AppState>().clearSelection();
-            },
+            onPressed: () => _trashAllWithUndo(context, state),
           ),
         ],
       ],
@@ -513,15 +523,12 @@ class _HomePageState extends State<HomePage> {
           },
           onLongPress: () =>
               context.read<AppState>().toggleSelected(bundle.entry.id),
-          onPin: () => context.read<Services>().entries.togglePinned(bundle.entry.id),
+          onPin: () => _pinWithUndo(context, bundle),
           onColor: () => _pickColor(context, bundle),
-          onArchive: () =>
-              context.read<Services>().entries.archive(bundle.entry.id),
-          onTrash: () =>
-              context.read<Services>().entries.moveToTrash(bundle.entry.id),
-          onRestore: () => state.workspace == Workspace.archive
-              ? context.read<Services>().entries.restoreFromArchive(bundle.entry.id)
-              : context.read<Services>().entries.restoreFromTrash(bundle.entry.id),
+          onArchive: () => _archiveWithUndo(context, bundle),
+          onTrash: () => _trashWithUndo(context, bundle),
+          onRestore: () =>
+              _restoreWithUndo(context, bundle, state.workspace),
           onDeleteForever: () => _deleteForever(context, bundle),
           onExport: () => ExportDialog.show(context, [bundle]),
           onMore: widget.isDesktop && mode != CardViewMode.rows
@@ -568,6 +575,81 @@ class _HomePageState extends State<HomePage> {
   // Actions
   // ---------------------------------------------------------------------
 
+  /// UND-02: single-entry metadata actions. Each performs the change, then
+  /// confirms with a five-second Undo that replays the previous value. The
+  /// revert goes through the same repository calls, so it marks the row
+  /// sync-pending exactly like any other edit.
+  Future<void> _pinWithUndo(BuildContext context, EntryBundle bundle) async {
+    final entries = context.read<Services>().entries;
+    final was = bundle.entry.isPinned;
+    await entries.togglePinned(bundle.entry.id);
+    if (context.mounted) {
+      showUndoSnackBar(
+        context,
+        message: was ? 'Unpinned' : 'Pinned',
+        onUndo: () => entries.setPinned(bundle.entry.id, was),
+      );
+    }
+  }
+
+  Future<void> _archiveWithUndo(
+    BuildContext context,
+    EntryBundle bundle,
+  ) async {
+    final entries = context.read<Services>().entries;
+    await entries.archive(bundle.entry.id);
+    if (context.mounted) {
+      showUndoSnackBar(
+        context,
+        message: 'Archived',
+        onUndo: () => entries.restoreFromArchive(bundle.entry.id),
+      );
+    }
+  }
+
+  Future<void> _trashWithUndo(BuildContext context, EntryBundle bundle) async {
+    final entries = context.read<Services>().entries;
+    await entries.moveToTrash(bundle.entry.id);
+    if (context.mounted) {
+      showUndoSnackBar(
+        context,
+        message: 'Moved to trash',
+        onUndo: () => entries.restoreFromTrash(bundle.entry.id),
+      );
+    }
+  }
+
+  /// Restore is workspace-dependent: from Archive it undoes an archive, from
+  /// Trash it undoes a trash. Trash restore round-trips cleanly because
+  /// `moveToTrash` records where each item came from.
+  Future<void> _restoreWithUndo(
+    BuildContext context,
+    EntryBundle bundle,
+    Workspace workspace,
+  ) async {
+    final entries = context.read<Services>().entries;
+    final id = bundle.entry.id;
+    if (workspace == Workspace.archive) {
+      await entries.restoreFromArchive(id);
+      if (context.mounted) {
+        showUndoSnackBar(
+          context,
+          message: 'Back in Home',
+          onUndo: () => entries.archive(id),
+        );
+      }
+      return;
+    }
+    await entries.restoreFromTrash(id);
+    if (context.mounted) {
+      showUndoSnackBar(
+        context,
+        message: 'Restored',
+        onUndo: () => entries.moveToTrash(id),
+      );
+    }
+  }
+
   void _open(BuildContext context, String id) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ItemPage(entryId: id)),
@@ -600,8 +682,7 @@ class _HomePageState extends State<HomePage> {
           SheetAction(
             icon: AppIcons.pinOutline,
             label: bundle.entry.isPinned ? 'Unpin' : 'Pin',
-            onTap: () =>
-                context.read<Services>().entries.togglePinned(bundle.entry.id),
+            onTap: () => _pinWithUndo(context, bundle),
           ),
           SheetAction(
             icon: AppIcons.color,
@@ -612,11 +693,8 @@ class _HomePageState extends State<HomePage> {
             icon: inArchive ? AppIcons.unarchive : AppIcons.archive,
             label: inArchive ? 'Unarchive' : 'Archive',
             onTap: () => inArchive
-                ? context
-                    .read<Services>()
-                    .entries
-                    .restoreFromArchive(bundle.entry.id)
-                : context.read<Services>().entries.archive(bundle.entry.id),
+                ? _restoreWithUndo(context, bundle, Workspace.archive)
+                : _archiveWithUndo(context, bundle),
           ),
           SheetAction(
             icon: AppIcons.export,
@@ -626,17 +704,13 @@ class _HomePageState extends State<HomePage> {
           SheetAction(
             icon: AppIcons.trash,
             label: 'Move to trash',
-            onTap: () =>
-                context.read<Services>().entries.moveToTrash(bundle.entry.id),
+            onTap: () => _trashWithUndo(context, bundle),
           ),
         ] else ...[
           SheetAction(
             icon: AppIcons.restore,
             label: 'Restore',
-            onTap: () => context
-                .read<Services>()
-                .entries
-                .restoreFromTrash(bundle.entry.id),
+            onTap: () => _restoreWithUndo(context, bundle, Workspace.trash),
           ),
           SheetAction(
             icon: AppIcons.export,
@@ -704,15 +778,42 @@ class _HomePageState extends State<HomePage> {
             currentKey: bundle.entry.colorKey,
           );
     if (key == null || !context.mounted) return;
-    await context.read<Services>().entries.setColor(bundle.entry.id, key);
+    final entries = context.read<Services>().entries;
+    final previous = bundle.entry.colorKey;
+    await entries.setColor(bundle.entry.id, key);
+    if (context.mounted) {
+      // UND-02: back to the previous colour on Undo.
+      showUndoSnackBar(
+        context,
+        message: 'Colour changed',
+        onUndo: () => entries.setColor(bundle.entry.id, previous),
+      );
+    }
   }
 
   Future<void> _colorSelected(BuildContext context, AppState state) async {
+    final services = context.read<Services>();
+    final ids = state.selected.toList();
     final key = await ColorPickerSheet.showSheet(context, currentKey: 'default');
     if (key == null || !context.mounted) return;
-    final services = context.read<Services>();
-    await services.entries.setColorAll(state.selected, key);
-    if (context.mounted) context.read<AppState>().clearSelection();
+    // UND-02: remember each entry's previous colour so Undo can revert them.
+    final before = <String, String>{
+      for (final bundle in await services.entries.entriesByIds(ids))
+        bundle.entry.id: bundle.entry.colorKey,
+    };
+    await services.entries.setColorAll(ids, key);
+    if (!context.mounted) return;
+    context.read<AppState>().clearSelection();
+    showUndoSnackBar(
+      context,
+      message:
+          'Colour changed for ${ids.length} item${ids.length == 1 ? '' : 's'}',
+      onUndo: () async {
+        for (final entry in before.entries) {
+          await services.entries.setColor(entry.key, entry.value);
+        }
+      },
+    );
   }
 
   Future<void> _exportSelected(BuildContext context, AppState state) async {
@@ -721,6 +822,73 @@ class _HomePageState extends State<HomePage> {
     if (!context.mounted) return;
     await ExportDialog.show(context, bundles);
     if (context.mounted) context.read<AppState>().clearSelection();
+  }
+
+  /// UND-02 for the multi-select toolbar. Each bulk action confirms with an
+  /// Undo that reverts every affected entry. The ids are captured before the
+  /// change because the selection is cleared right after.
+  Future<void> _restoreAllWithUndo(
+    BuildContext context,
+    AppState state,
+  ) async {
+    final services = context.read<Services>();
+    final ids = state.selected.toList();
+    await services.entries.restoreAll(ids);
+    if (!context.mounted) return;
+    context.read<AppState>().clearSelection();
+    showUndoSnackBar(
+      context,
+      message: 'Restored ${ids.length} item${ids.length == 1 ? '' : 's'}',
+      onUndo: () => services.entries.trashAll(ids),
+    );
+  }
+
+  Future<void> _unarchiveAllWithUndo(
+    BuildContext context,
+    AppState state,
+  ) async {
+    final services = context.read<Services>();
+    final ids = state.selected.toList();
+    await services.entries.unarchiveAll(ids);
+    if (!context.mounted) return;
+    context.read<AppState>().clearSelection();
+    showUndoSnackBar(
+      context,
+      message: 'Unarchived ${ids.length} item${ids.length == 1 ? '' : 's'}',
+      onUndo: () => services.entries.archiveAll(ids),
+    );
+  }
+
+  Future<void> _archiveAllWithUndo(
+    BuildContext context,
+    AppState state,
+  ) async {
+    final services = context.read<Services>();
+    final ids = state.selected.toList();
+    await services.entries.archiveAll(ids);
+    if (!context.mounted) return;
+    context.read<AppState>().clearSelection();
+    showUndoSnackBar(
+      context,
+      message: 'Archived ${ids.length} item${ids.length == 1 ? '' : 's'}',
+      onUndo: () => services.entries.unarchiveAll(ids),
+    );
+  }
+
+  Future<void> _trashAllWithUndo(
+    BuildContext context,
+    AppState state,
+  ) async {
+    final services = context.read<Services>();
+    final ids = state.selected.toList();
+    await services.entries.trashAll(ids);
+    if (!context.mounted) return;
+    context.read<AppState>().clearSelection();
+    showUndoSnackBar(
+      context,
+      message: 'Moved ${ids.length} item${ids.length == 1 ? '' : 's'} to trash',
+      onUndo: () => services.entries.restoreAll(ids),
+    );
   }
 
   /// T-12/T-17

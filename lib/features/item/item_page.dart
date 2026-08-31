@@ -13,6 +13,7 @@ import '../../app/icons.dart';
 import '../../app/screen_awake.dart';
 import '../../app/services.dart';
 import '../../app/theme.dart';
+import '../../app/undo_snackbar.dart';
 import '../../core/time.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/checklist_matcher.dart';
@@ -20,6 +21,7 @@ import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../state/app_state.dart';
 import '../export/export_dialog.dart';
+import '../home/widgets/entry_card.dart';
 import '../lock/pin_lock_controller.dart';
 import '../lock/pin_pad.dart';
 import 'widgets/image_strip.dart';
@@ -48,6 +50,11 @@ class _ItemPageState extends State<ItemPage> {
   final TextEditingController _bodyController = TextEditingController();
   final FocusNode _bodyFocus = FocusNode();
 
+  /// UND-01: drives the body editor's undo stack. The IME keyboard's own
+  /// undo, Ctrl+Z on a desktop keyboard, and the app bar buttons all flow
+  /// through this one controller, so every surface agrees on one history.
+  final UndoController _undoController = UndoController();
+
   late bool _editing = widget.startInEditMode;
   Timer? _autosave;
   bool _controllersPrimed = false;
@@ -75,6 +82,7 @@ class _ItemPageState extends State<ItemPage> {
     _titleController.dispose();
     _bodyController.dispose();
     _bodyFocus.dispose();
+    _undoController.dispose();
     super.dispose();
   }
 
@@ -179,10 +187,19 @@ class _ItemPageState extends State<ItemPage> {
           );
         }
 
-        return Scaffold(
-          backgroundColor: background,
-          appBar: _appBar(context, bundle, isDesktop, background),
-          body: SafeArea(
+        // MOT-03: the background cross-fades when the note's colour changes.
+        // MOT-01: the opened item then flies out of its card and back on pop.
+        final page = TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: background),
+          duration: MediaQuery.of(context).disableAnimations
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
+          builder: (context, animatedBackground, child) => Scaffold(
+            backgroundColor: animatedBackground,
+            appBar: _appBar(context, bundle, isDesktop, animatedBackground),
+            body: child,
+          ),
+          child: SafeArea(
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 820),
@@ -198,13 +215,18 @@ class _ItemPageState extends State<ItemPage> {
                     ),
                     _content(context, bundle, settings),
                     const SizedBox(height: 24),
-                    _metaFooter(bundle),
-                  ],
-                ),
+                  _metaFooter(bundle),
+                ],
               ),
             ),
           ),
+          ),
         );
+
+        // MOT-01: reduced-motion users get a plain page swap instead.
+        return MediaQuery.of(context).disableAnimations
+            ? page
+            : Hero(tag: entryHeroTag(widget.entryId), child: page);
       },
     );
   }
@@ -232,11 +254,36 @@ class _ItemPageState extends State<ItemPage> {
         },
       ),
       actions: [
+        // UND-01: undo/redo while editing; safe no-ops on an empty stack.
+        if (_editing) ...[
+          AppIconButton(
+            icon: AppIcons.undo,
+            label: 'Undo typing',
+            onPressed: () => _undoController.undo(),
+          ),
+          AppIconButton(
+            icon: AppIcons.redo,
+            label: 'Redo typing',
+            onPressed: () => _undoController.redo(),
+          ),
+        ],
         AppIconButton(
           icon: bundle.entry.isPinned ? AppIcons.pin : AppIcons.pinOutline,
           label: bundle.entry.isPinned ? 'Unpin' : 'Pin',
           selected: bundle.entry.isPinned,
-          onPressed: () => services.entries.togglePinned(bundle.entry.id),
+          // UND-02: the change confirms with a five-second Undo.
+          onPressed: () async {
+            final was = bundle.entry.isPinned;
+            await services.entries.togglePinned(bundle.entry.id);
+            if (mounted) {
+              showUndoSnackBar(
+                context,
+                message: was ? 'Unpinned' : 'Pinned',
+                onUndo: () =>
+                    services.entries.setPinned(bundle.entry.id, was),
+              );
+            }
+          },
         ),
 
         // K-01/K-09: checkbox visibility toggle — checklists, View Mode only.
@@ -362,19 +409,55 @@ class _ItemPageState extends State<ItemPage> {
         await _showHistory(context, bundle);
       case 'archive':
         await services.entries.archive(id);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          // UND-02: shown before the pop — the messenger outlives this route.
+          showUndoSnackBar(
+            context,
+            message: 'Archived',
+            onUndo: () => services.entries.restoreFromArchive(id),
+          );
+          Navigator.of(context).pop();
+        }
       case 'unarchive':
         await services.entries.restoreFromArchive(id);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          showUndoSnackBar(
+            context,
+            message: 'Back in Home',
+            onUndo: () => services.entries.archive(id),
+          );
+          Navigator.of(context).pop();
+        }
       case 'trash':
         await services.entries.moveToTrash(id);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          showUndoSnackBar(
+            context,
+            message: 'Moved to trash',
+            onUndo: () => services.entries.restoreFromTrash(id),
+          );
+          Navigator.of(context).pop();
+        }
       case 'restore':
         await services.entries.restoreFromTrash(id);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          showUndoSnackBar(
+            context,
+            message: 'Restored',
+            onUndo: () => services.entries.moveToTrash(id),
+          );
+          Navigator.of(context).pop();
+        }
       case 'home':
         await services.entries.moveToHome(id);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          showUndoSnackBar(
+            context,
+            message: 'Moved to Home',
+            onUndo: () => services.entries.moveToTrash(id),
+          );
+          Navigator.of(context).pop();
+        }
       case 'delete':
         final confirmed = await confirmDestructive(
           context,
@@ -434,22 +517,26 @@ class _ItemPageState extends State<ItemPage> {
     final contentStyle = TextStyle(fontSize: baseSize, height: 1.45);
 
     if (_editing) {
-      return TextField(
-        controller: _bodyController,
-        focusNode: _bodyFocus,
-        style: contentStyle,
-        maxLines: null,
-        minLines: 12,
-        keyboardType: TextInputType.multiline,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(
-          // N-08: a checklist in Edit Mode is just a multiline note.
-          hintText: bundle.isChecklist
-              ? 'One item per line'
-              : 'Start writing...',
-          filled: false,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
+      // UND-01: see the controller's doc comment at the top of this class.
+      return UndoHistory(
+        controller: _undoController,
+        child: TextField(
+          controller: _bodyController,
+          focusNode: _bodyFocus,
+          style: contentStyle,
+          maxLines: null,
+          minLines: 12,
+          keyboardType: TextInputType.multiline,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            // N-08: a checklist in Edit Mode is just a multiline note.
+            hintText: bundle.isChecklist
+                ? 'One item per line'
+                : 'Start writing...',
+            filled: false,
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
         ),
       );
     }
@@ -637,7 +724,17 @@ class _ItemPageState extends State<ItemPage> {
             currentKey: bundle.entry.colorKey,
           );
     if (key == null || !context.mounted) return;
-    await context.read<Services>().entries.setColor(bundle.entry.id, key);
+    final entries = context.read<Services>().entries;
+    final previous = bundle.entry.colorKey;
+    await entries.setColor(bundle.entry.id, key);
+    if (context.mounted) {
+      // UND-02: colour changes confirm with an Undo back to the previous one.
+      showUndoSnackBar(
+        context,
+        message: 'Colour changed',
+        onUndo: () => entries.setColor(bundle.entry.id, previous),
+      );
+    }
   }
 
   /// IMG-10: image-only pickers on both platforms.
