@@ -271,9 +271,8 @@ class _EntryCardState extends State<EntryCard> {
   String _rowSnippet() {
     if (widget.bundle.isChecklist) {
       if (widget.bundle.lines.isEmpty) return 'Empty list';
-      final first = widget.bundle.lines.first;
-      final prefix = first.checked ? '☑ ' : '☐ ';
-      return '$prefix${first.text}';
+      // Plain text only — no checkbox marks on the card snippet.
+      return widget.bundle.lines.first.text;
     }
     final body = widget.bundle.entry.body.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (body.isEmpty) return 'Empty note';
@@ -330,7 +329,9 @@ class _EntryCardState extends State<EntryCard> {
   Widget _body(Color foreground, bool compact) {
     final maxLines = compact ? 2 : (widget.viewMode == CardViewMode.list ? 5 : 8);
 
-    // U-14: checklists preview as checkbox rows with a "+N more" counter.
+    // U-14: checklists preview as plain text lines with a "+N more" counter.
+    // No checkbox ticks here — those appear only in the opened list's View
+    // Mode, and only when the user toggles them on.
     if (widget.bundle.isChecklist) {
       final lines = widget.bundle.lines;
       if (lines.isEmpty) {
@@ -354,32 +355,15 @@ class _EntryCardState extends State<EntryCard> {
           for (final line in shown)
             Padding(
               padding: const EdgeInsets.only(bottom: 3),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    line.checked
-                        ? Icons.check_box_outlined
-                        : Icons.check_box_outline_blank,
-                    size: compact ? 13 : 15,
-                    color: foreground.fade(0.7),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      line.text,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: compact ? 12 : 13,
-                        color: foreground.fade(line.checked ? 0.5 : 0.85),
-                        decoration: line.checked
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                line.text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 12 : 13,
+                  height: 1.35,
+                  color: foreground.fade(0.85),
+                ),
               ),
             ),
           if (remaining > 0)

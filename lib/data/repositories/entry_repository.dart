@@ -61,7 +61,7 @@ class TypeCounts extends ChangeNotifier {
     );
   }
 
-  final StreamSubscription<({int notes, int lists})> _sub;
+  late final StreamSubscription<({int notes, int lists})> _sub;
 
   ({int notes, int lists})? _value;
 
@@ -283,6 +283,12 @@ class EntryRepository {
             updatedAt: now,
             contentUpdatedAt: now,
             metadataUpdatedAt: now,
+            // K-06: new lists start with checkboxes hidden. The user turns
+            // them on from the opened list's View Mode. Setting this
+            // explicitly (rather than relying on the column default) is what
+            // makes the change take effect even on databases created before
+            // the default was flipped off.
+            checkboxesVisibleInView: Value(false),
             localChanged: const Value(true),
             syncStatus: Value(SyncStatus.pending.value),
           ),
