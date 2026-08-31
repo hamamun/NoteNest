@@ -118,7 +118,7 @@ but it is not enforced.
 Things to skip unless you want to argue for them first: any cloud service owned
 by someone other than the user, telemetry of any kind, account systems,
 real-time multi-user collaborative editing, and inline images inside a note body
-(slated for `v1.2`).
+(slated for `v1.7`).
 
 ## Licensing
 

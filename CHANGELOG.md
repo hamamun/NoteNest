@@ -9,7 +9,7 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 ## [Unreleased]
 
 ### Added
-- Placeholder for the next line: restore-from-backup.
+- Placeholder for the `v1.6` line: restore-from-backup.
 
 ## [1.5.0] - 2026-08-31
 

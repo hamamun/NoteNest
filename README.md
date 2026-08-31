@@ -397,7 +397,7 @@ Windows caches the old taskbar icon until you unpin NoteNest or restart Explorer
 
 ## Roadmap
 
-`v1.1` backup restore · `v1.2` inline images in note bodies · `v1.3` tags and
+`v1.6` backup restore · `v1.7` inline images in note bodies · `v1.8` tags and
 saved searches · `v2` iOS + macOS runners, E2EE with per-device key exchange,
 a local web view of the repo. Pick something from
 [open issues](https://github.com/hamamun/NoteNest/issues) — see

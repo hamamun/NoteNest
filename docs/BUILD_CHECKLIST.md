@@ -10,7 +10,7 @@ local_first_notes_app_requirements_audit.md ( 823 lines)
 Every requirement in those two files appears below with a stable ID.
 If something is not in this file, it is not in Version 1.
 
-> ## Implementation status — v1.0.0 (228 requirements built)
+> ## Implementation status — v1.5.0 (228 requirements built)
 >
 > `[~]` = **implemented in code.** This checklist was written in a sandbox that
 > had no Flutter SDK, so the items were originally marked against the source
@@ -629,9 +629,9 @@ Added after v1, by request. Device-local only.
 - [~] **G-13b** MUST the top sync icon spins while a sync is running.
 - [~] **AWK-01** MUST Android View Mode has a keep-screen-on toggle. Off when leaving the item or switching to Edit. Not shown on Windows.
 
-## 25. v1.2 polish: motion, Material You, undo safety
+## 25. v1.5 polish: motion, Material You, undo safety
 
-Added after v1.1, by request. All device-local.
+Shipped in v1.5.0, by request. All device-local.
 
 - [~] **MOT-01** MUST opening a card flies it into the item screen (shared-element Hero) and back on pop; skipped when the OS reports reduced motion.
 - [~] **MOT-02** MUST switching Grid / List / Compact / Rows cross-fades instead of snapping; instant for reduced motion.

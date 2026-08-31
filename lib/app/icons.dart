@@ -61,7 +61,7 @@ class AppIcons {
   static const IconData keepAwake = Icons.wb_sunny_outlined;
   static const IconData keepAwakeOff = Icons.brightness_2_outlined;
 
-  // --- v1.2 polish: motion, Material You, undo (MOT/THM/UND) ---
+  // --- v1.5 polish: motion, Material You, undo (MOT/THM/UND) ---
   static const IconData undo = Icons.undo_outlined;
   static const IconData redo = Icons.redo_outlined;
   static const IconData wallpaper = Icons.wallpaper;
