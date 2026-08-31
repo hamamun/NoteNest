@@ -66,7 +66,7 @@ Filename: "{app}\notenest.exe"; Description: "Launch {#AppName}"; Flags: nowait 
 
 ; NOTE: there is deliberately no [UninstallDelete] section here.
 ; NoteNest is local-first: for a user who never configured sync, the SQLite
-; database in %LOCALAPPDATA%\notenest is the ONLY copy of their notes. An
+; database in %APPDATA%\notenest is the ONLY copy of their notes. An
 ; uninstall must never quietly destroy it, because the same uninstall is also
 ; what someone does to "reinstall the app". The leftover is a few megabytes,
 ; and the dialog below says exactly where it is so it can be removed by hand.
@@ -80,16 +80,16 @@ var
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    DataDir := ExpandConstant('{localappdata}\notenest');
+    DataDir := ExpandConstant('{userappdata}\notenest');
     if DirExists(DataDir) then
       MsgBox(
-        'NoteNest has been removed from this PC.' #13#10 #13#10
-        'Your notes were NOT deleted. They are still in:' #13#10
-        DataDir #13#10 #13#10
-        'If you enabled GitHub sync, they are also in your private repository '
-        '- reinstall NoteNest and reconnect it to bring everything back.' #13#10 #13#10
-        'On a computer you are handing to somebody else, delete the folder above '
-        'as well. NoteNest does not do it for you, because it cannot know '
+        'NoteNest has been removed from this PC.' + #13#10 + #13#10 +
+        'Your notes were NOT deleted. They are still in:' + #13#10 +
+        DataDir + #13#10 + #13#10 +
+        'If you enabled GitHub sync, they are also in your private repository ' +
+        '- reinstall NoteNest and reconnect it to bring everything back.' + #13#10 + #13#10 +
+        'On a computer you are handing to somebody else, delete the folder above ' +
+        'as well. NoteNest does not do it for you, because it cannot know ' +
         'whether another copy exists.',
         mbInformation, MB_OK)
     else

@@ -11,6 +11,13 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 ### Added
 - Placeholder for the `v1.6` line: restore-from-backup.
 
+### Fixed
+- Windows installer script compiles again: the uninstaller message in
+  `tool/windows_installer.iss` used an invalid implicit string concatenation.
+- The same uninstaller message now points at the real data directory
+  (`%APPDATA%\notenest`, where `path_provider` keeps the SQLite database)
+  instead of `%LOCALAPPDATA%`.
+
 ## [1.5.0] - 2026-08-31
 
 Polish release: motion, Material You, and an undo safety net.
