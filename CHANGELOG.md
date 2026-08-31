@@ -33,6 +33,12 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
   notes no longer lock while you are actively working in them (PIN-05). The
   lock still fires after real inactivity, and a backgrounded app still locks
   once its deadline passes.
+- The Windows build no longer fails: Edit Mode's undo/redo now uses the
+  framework's built-in `UndoHistoryController` (wired through
+  `TextField.undoController`, so IME undo, Ctrl+Z and the app bar buttons
+  still share one history), the item app bar accepts a nullable background
+  colour, and wheel-scroll activity is detected with the version-safe
+  `onPointerSignal` + `PointerScrollEvent` pair (UND-01, PIN-05).
 
 ## [1.0.0] - 2026-08-27
 
