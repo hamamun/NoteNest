@@ -50,10 +50,11 @@ class _ItemPageState extends State<ItemPage> {
   final TextEditingController _bodyController = TextEditingController();
   final FocusNode _bodyFocus = FocusNode();
 
-  /// UND-01: drives the body editor's undo stack. The IME keyboard's own
-  /// undo, Ctrl+Z on a desktop keyboard, and the app bar buttons all flow
-  /// through this one controller, so every surface agrees on one history.
-  final UndoController _undoController = UndoController();
+  /// UND-01: drives the body editor's undo stack. The framework wires this
+  /// controller into the editor's internal [UndoHistory] widget, so the IME
+  /// keyboard's own undo, Ctrl+Z on a desktop keyboard, and the app bar
+  /// buttons all flow through one history and agree with each other.
+  final UndoHistoryController _undoController = UndoHistoryController();
 
   late bool _editing = widget.startInEditMode;
   Timer? _autosave;
@@ -239,7 +240,7 @@ class _ItemPageState extends State<ItemPage> {
     BuildContext context,
     EntryBundle bundle,
     bool isDesktop,
-    Color background,
+    Color? background,
   ) {
     final services = context.read<Services>();
 
@@ -254,19 +255,28 @@ class _ItemPageState extends State<ItemPage> {
         },
       ),
       actions: [
-        // UND-01: undo/redo while editing; safe no-ops on an empty stack.
-        if (_editing) ...[
-          AppIconButton(
-            icon: AppIcons.undo,
-            label: 'Undo typing',
-            onPressed: () => _undoController.undo(),
+        // UND-01: undo/redo while editing. The controller's value exposes
+        // canUndo/canRedo, so the buttons grey out when the stack is empty
+        // (calling undo()/redo() on an empty stack is a safe no-op).
+        if (_editing)
+          ValueListenableBuilder<UndoHistoryValue>(
+            valueListenable: _undoController,
+            builder: (context, state, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIconButton(
+                  icon: AppIcons.undo,
+                  label: 'Undo typing',
+                  onPressed: state.canUndo ? _undoController.undo : null,
+                ),
+                AppIconButton(
+                  icon: AppIcons.redo,
+                  label: 'Redo typing',
+                  onPressed: state.canRedo ? _undoController.redo : null,
+                ),
+              ],
+            ),
           ),
-          AppIconButton(
-            icon: AppIcons.redo,
-            label: 'Redo typing',
-            onPressed: () => _undoController.redo(),
-          ),
-        ],
         AppIconButton(
           icon: bundle.entry.isPinned ? AppIcons.pin : AppIcons.pinOutline,
           label: bundle.entry.isPinned ? 'Unpin' : 'Pin',
@@ -518,25 +528,25 @@ class _ItemPageState extends State<ItemPage> {
 
     if (_editing) {
       // UND-01: see the controller's doc comment at the top of this class.
-      return UndoHistory(
-        controller: _undoController,
-        child: TextField(
-          controller: _bodyController,
-          focusNode: _bodyFocus,
-          style: contentStyle,
-          maxLines: null,
-          minLines: 12,
-          keyboardType: TextInputType.multiline,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(
-            // N-08: a checklist in Edit Mode is just a multiline note.
-            hintText: bundle.isChecklist
-                ? 'One item per line'
-                : 'Start writing...',
-            filled: false,
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
+      // The framework feeds the undo history from the field itself, so IME
+      // undo, Ctrl+Z and the app bar buttons all share this one stack.
+      return TextField(
+        controller: _bodyController,
+        focusNode: _bodyFocus,
+        undoController: _undoController,
+        style: contentStyle,
+        maxLines: null,
+        minLines: 12,
+        keyboardType: TextInputType.multiline,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(
+          // N-08: a checklist in Edit Mode is just a multiline note.
+          hintText: bundle.isChecklist
+              ? 'One item per line'
+              : 'Start writing...',
+          filled: false,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
         ),
       );
     }

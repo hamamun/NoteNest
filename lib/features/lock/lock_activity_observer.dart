@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +65,12 @@ class _LockActivityObserverState extends State<LockActivityObserver> {
       onPointerMove: (event) {
         if (event.down) _lock().noteActivity();
       },
-      onPointerScroll: (_) => _lock().noteActivity(),
+      // PIN-05: wheel scrolls count as activity. `Listener.onPointerScroll`
+      // only exists on newer SDKs, so use the classic onPointerSignal +
+      // PointerScrollEvent form that every supported Flutter has.
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) _lock().noteActivity();
+      },
       onPointerPanZoomUpdate: (_) => _lock().noteActivity(),
       child: widget.child,
     );
