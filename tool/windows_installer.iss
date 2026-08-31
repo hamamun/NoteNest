@@ -1,4 +1,4 @@
-; NoteNest — Windows installer (Inno Setup 6)
+; NoteNest - Windows installer (Inno Setup 6)
 ;
 ; Build the app first:
 ;     flutter build windows
@@ -17,6 +17,9 @@
 #define AppPublisher "hamamun"
 #define AppURL "https://github.com/hamamun/NoteNest"
 #define BuildDir "..\build\windows\x64\runner\Release"
+#ifnexist "..\build\windows\x64\runner\Release\notenest.exe"
+  #error Build the app first: run "flutter build windows" (creates build\windows\x64\runner\Release\notenest.exe)
+#endif
 
 [Setup]
 AppName={#AppName}
