@@ -84,6 +84,11 @@ class _ItemPageState extends State<ItemPage> {
 
   /// N-07: debounce 800 ms, plus save on mode switch and on leaving.
   void _scheduleAutosave() {
+    // PIN-05: every keystroke is user activity and must push the auto-lock
+    // deadline forward. Soft keyboards emit no pointer or key events to the
+    // app, so LockActivityObserver cannot see them — the editor reports
+    // typing itself.
+    context.read<PinLockController>().noteActivity();
     if (!_editing) return;
     _dirty = true;
     _autosave?.cancel();

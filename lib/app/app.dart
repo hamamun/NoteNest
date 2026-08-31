@@ -5,6 +5,7 @@ import '../data/models/enums.dart';
 import '../data/repositories/settings_repository.dart';
 import '../features/home/create_flow.dart';
 import '../features/home/home_page.dart';
+import '../features/lock/lock_activity_observer.dart';
 import '../features/lock/lock_lifecycle.dart';
 import '../features/settings/settings_page.dart';
 import '../state/app_state.dart';
@@ -36,6 +37,10 @@ class NoteNestApp extends StatelessWidget {
       darkTheme: AppTheme.dark(),
       themeMode: settings.themeMode, // SET-14
       home: const LockLifecycle(child: AppShell()),
+      // PIN-05: above the Navigator, so activity on pushed pages (editor,
+      // settings, dialogs) resets the auto-lock timer too.
+      builder: (context, child) =>
+          LockActivityObserver(child: child ?? const SizedBox.shrink()),
     );
   }
 }

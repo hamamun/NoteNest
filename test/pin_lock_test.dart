@@ -154,6 +154,48 @@ void main() {
       lock.dispose();
     });
 
+    test('user activity pushes the auto-lock deadline forward', () async {
+      var now = DateTime.utc(2026, 8, 24, 12, 0);
+      final lock = PinLockController(clock: () => now);
+      await lock.setAutoLock(AutoLockMinutes.one);
+      await lock.setPin('9999');
+      lock.lockNow();
+      expect(await lock.unlockWithPin('9999'), isTrue);
+
+      // Halfway through the minute the user is still working.
+      now = now.add(const Duration(seconds: 30));
+      lock.noteActivity();
+
+      // Past the ORIGINAL deadline, but only 45 s after the activity.
+      now = now.add(const Duration(seconds: 45));
+      lock.onResumed();
+      expect(lock.shouldHideNotes, isFalse);
+
+      // 16 s later (61 s after the activity) the pushed deadline has passed.
+      now = now.add(const Duration(seconds: 16));
+      lock.onResumed();
+      expect(lock.shouldHideNotes, isTrue);
+      lock.dispose();
+    });
+
+    test('activity while locked never arms a timer nor unlocks', () async {
+      var now = DateTime.utc(2026, 8, 24, 12, 0);
+      final lock = PinLockController(clock: () => now);
+      await lock.setAutoLock(AutoLockMinutes.one);
+      await lock.setPin('9999');
+      lock.lockNow();
+
+      // An attacker tapping around on the lock screen must gain nothing…
+      lock.noteActivity();
+
+      // …not even after staying away far past every deadline.
+      now = now.add(const Duration(minutes: 30));
+      lock.onResumed();
+      expect(lock.shouldHideNotes, isTrue);
+      expect(lock.needsHomeGate, isTrue);
+      lock.dispose();
+    });
+
     test('closing the session locks immediately', () async {
       final lock = PinLockController();
       await lock.setPin('1111');

@@ -11,6 +11,13 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 ### Added
 - Placeholder for the `v1.1` line: restore-from-backup.
 
+### Fixed
+- The session auto-lock timer now resets on in-app activity — taps, drags,
+  scrolls, physical key presses and editor typing keep the session open, so
+  notes no longer lock while you are actively working in them (PIN-05). The
+  lock still fires after real inactivity, and a backgrounded app still locks
+  once its deadline passes.
+
 ## [1.0.0] - 2026-08-27
 
 First public release. Ships for **Windows x64** and **Android**; iOS, macOS and

@@ -625,5 +625,6 @@ Added after v1, by request. Device-local only.
 - [~] **PIN-02** MUST lock target: Notes only / Lists only / Both. Archive and Trash are never locked.
 - [~] **PIN-03** MUST Home All hides locked types. Tapping Notes or Lists asks for the PIN. Both locked → PIN on app open.
 - [~] **PIN-04** MUST auto-lock after 1 / 5 / 15 minutes. Closing the app locks at once. A phone left in the background stays unlocked until the timer ends.
+- [~] **PIN-05** MUST auto-lock counts from the **last in-app activity** (tap, drag, scroll, physical key press, or editor typing), not from the moment of unlock, so it never fires mid-edit. Activity while locked never unlocks; returning from the background after the deadline still locks (PIN-04 wins over PIN-05).
 - [~] **G-13b** MUST the top sync icon spins while a sync is running.
 - [~] **AWK-01** MUST Android View Mode has a keep-screen-on toggle. Off when leaving the item or switching to Edit. Not shown on Windows.
