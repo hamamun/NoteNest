@@ -28,9 +28,10 @@ class Entries extends Table {
   TextColumn get location => text().withDefault(const Constant('active'))();
   TextColumn get previousLocationBeforeTrash => text().nullable()();
 
-  /// K-06: per-checklist checkbox visibility, default on.
+  /// K-06: per-checklist checkbox visibility, default off. New lists start
+  /// hidden; the user turns them on via the toggle in the list's View Mode.
   BoolColumn get checkboxesVisibleInView =>
-      boolean().withDefault(const Constant(true))();
+      boolean().withDefault(const Constant(false))();
 
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
