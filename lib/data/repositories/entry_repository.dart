@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 
 import '../../core/hash.dart';
 import '../../core/logging.dart';
@@ -34,6 +35,45 @@ class EntryBundle {
   }
 
   int get checkedCount => lines.where((l) => l.checked).length;
+}
+
+/// Holds the latest note/list counts for one workspace and notifies listeners
+/// whenever the database changes.
+///
+/// One instance exists per workspace for the app session. It keeps the count
+/// query streams subscribed for that whole time — never cancelling, never
+/// re-listening — so the single-subscription Drift streams are listened to
+/// exactly once (a second listen after cancellation throws, see
+/// [EntryRepository.watchTypeCounts]). Widgets read [value] and rebuild via
+/// `ListenableBuilder`; because the value is cached, chips render instantly
+/// (and correctly) even right after switching workspaces, with no stream
+/// re-subscription and no stale/zero counts.
+class TypeCounts extends ChangeNotifier {
+  TypeCounts(Stream<({int notes, int lists})> source) {
+    _sub = source.listen(
+      (value) {
+        _value = value;
+        notifyListeners();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        AppLog.warn('repo', 'type count stream failed: $error');
+      },
+    );
+  }
+
+  final StreamSubscription<({int notes, int lists})> _sub;
+
+  ({int notes, int lists})? _value;
+
+  /// The most recent counts for this workspace, or null before the first
+  /// query completes.
+  ({int notes, int lists})? get value => _value;
+
+  @override
+  void dispose() {
+    unawaited(_sub.cancel());
+    super.dispose();
+  }
 }
 
 /// The central data access object for notes and lists.
@@ -157,59 +197,45 @@ class EntryRepository {
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
-  /// Counts notes or lists in [workspace], split by type. Backs the "All"
-  /// chip badge; excluding PIN-locked sections is the caller's job, never the
-  /// query's, so this stays a plain, testable read.
+  /// Reactive notes + lists counts for [workspace], exposed as a [TypeCounts]
+  /// notifier that widgets can listen to.
   ///
-  /// Sourced from the same shared [watchTypeCounts] stream as every chip on
-  /// the filter row, so all of them stay in sync without ever opening a second
-  /// listen on the same Drift query (F-02). Drift query streams are
-  /// single-subscription: a duplicate listen throws "Bad state: Stream has
-  /// already been listened to" when the screen is rebuilt after switching
-  /// workspaces, which is exactly what a fresh `watchCountByType` per widget
-  /// would hit once the count is also rendered on the Notes and Lists chips.
-  Stream<int> watchCountByType(Workspace workspace, EntryType type) =>
-      _countCache.putIfAbsent(
-        (workspace, type),
-        () {
-          final count = _db.entries.id.count();
-          final query = _db.selectOnly(_db.entries)
-            ..addColumns([count])
-            ..where(_db.entries.location.equals(workspace.location.value) &
-                _db.entries.type.equals(type.value));
-          // Drift `watchSingle` streams are single-subscription, so the shared
-          // stream is broadcast: many widgets may listen at once.
-          return query
-              .watchSingle()
-              .map((row) => row.read(count) ?? 0)
-              .asBroadcastStream();
-        },
-      );
-
-  /// Reactive notes + lists counts for [workspace], merged into one stream.
-  ///
-  /// The merged stream is cached per workspace for the lifetime of the
-  /// repository, so the filter row (All, Notes, Lists) and any future consumer
-  /// share one underlying Drift query per count. No query is ever listened to
-  /// twice and no stream is ever recreated (which would also flicker the
-  /// numbers on every rebuild).
-  Stream<({int notes, int lists})> watchTypeCounts(Workspace workspace) =>
-      _typeCountCache.putIfAbsent(
+  /// Each workspace gets exactly one [TypeCounts], created on first access and
+  /// kept for the lifetime of the repository. It holds one long-lived
+  /// subscription to the count query streams — the subscription is never
+  /// cancelled and never re-created — so the underlying Drift queries are
+  /// listened to exactly once. This matters because Drift's `watchSingle`
+  /// streams are single-subscription: a second `listen` (even after the first
+  /// subscription was cancelled) throws "Bad state: Stream has already been
+  /// listened to". That is exactly what happened when the filter chips
+  /// resubscribed after switching Home -> Archive/Trash -> Home.
+  TypeCounts watchTypeCounts(Workspace workspace) =>
+      _typeCounts.putIfAbsent(
         workspace,
-        () => _combineLatest2(
-          watchCountByType(workspace, EntryType.note),
-          watchCountByType(workspace, EntryType.checklist),
-          (notes, lists) => (notes: notes, lists: lists),
-        ).asBroadcastStream(),
+        () => TypeCounts(_typeCountStream(workspace)),
       );
 
-  /// One live Drift count query per (workspace, type) pair.
-  final Map<(Workspace, EntryType), Stream<int>> _countCache =
-      <(Workspace, EntryType), Stream<int>>{};
+  /// One [TypeCounts] per workspace, alive for the app session.
+  final Map<Workspace, TypeCounts> _typeCounts = <Workspace, TypeCounts>{};
 
-  /// One merged (notes, lists) stream per workspace.
-  final Map<Workspace, Stream<({int notes, int lists})>> _typeCountCache =
-      <Workspace, Stream<({int notes, int lists})>>{};
+  Stream<({int notes, int lists})> _typeCountStream(Workspace workspace) =>
+      _combineLatest2(
+        _countStream(workspace, EntryType.note),
+        _countStream(workspace, EntryType.checklist),
+        (notes, lists) => (notes: notes, lists: lists),
+      );
+
+  /// A single-subscription count query stream. Called exactly once per
+  /// (workspace, type) by [_typeCountStream]; the [TypeCounts] instance is
+  /// its only listener and keeps the subscription alive for the app session.
+  Stream<int> _countStream(Workspace workspace, EntryType type) {
+    final count = _db.entries.id.count();
+    final query = _db.selectOnly(_db.entries)
+      ..addColumns([count])
+      ..where(_db.entries.location.equals(workspace.location.value) &
+          _db.entries.type.equals(type.value));
+    return query.watchSingle().map((row) => row.read(count) ?? 0);
+  }
 
   Future<List<EntryBundle>> _bundleAll(List<Entry> rows) async {
     final result = <EntryBundle>[];

@@ -398,9 +398,12 @@ class _HomePageState extends State<HomePage> {
   /// items as a muted number after its label — no badge, no background, so
   /// the row reads like "All 12 · Notes 8 · Lists 4".
   ///
-  /// All three chips share one repository stream per workspace (cached in the
-  /// repository, see [EntryRepository.watchTypeCounts]), so no Drift query is
-  /// ever listened to twice and the numbers never go stale or flicker.
+  /// All three chips listen to one [TypeCounts] notifier per workspace
+  /// (created once and kept alive in the repository). The underlying Drift
+  /// count queries are listened to exactly once for the whole app session and
+  /// the latest value is cached, so chips render instantly — and correctly —
+  /// after switching workspaces, with no stream re-subscription and no
+  /// "Stream has already been listened to" / stale-zero counts.
   ///
   /// On Home, PIN-locked note/list sections are excluded so the number always
   /// matches what is on screen; when a section is fully gated its chip shows
@@ -411,12 +414,12 @@ class _HomePageState extends State<HomePage> {
     final services = context.read<Services>();
     final lock = context.read<PinLockController>();
     final onHome = state.workspace == Workspace.home;
-    final stream = services.entries.watchTypeCounts(state.workspace);
+    final counts = services.entries.watchTypeCounts(state.workspace);
 
-    return StreamBuilder<({int notes, int lists})>(
-      stream: stream,
-      builder: (context, snapshot) {
-        final data = snapshot.data;
+    return ListenableBuilder(
+      listenable: counts,
+      builder: (context, _) {
+        final data = counts.value;
         // Keep the plain label until the very first count arrives, so the
         // filter row is stable on first build.
         if (data == null) return label;
