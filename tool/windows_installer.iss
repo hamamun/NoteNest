@@ -26,7 +26,6 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}/issues
 AppUpdatesURL={#AppURL}/releases
-VersionDisplay={#AppVersion}
 DefaultDirName={localappdata}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
