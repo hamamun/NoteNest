@@ -35,6 +35,8 @@ class SettingsRepository extends ChangeNotifier {
   static const _kFirstRunDone = 'first_run_done';
   static const _kPinLockTarget = 'pin_lock_target';
   static const _kAutoLockMinutes = 'auto_lock_minutes';
+  static const _kUseDynamicColor = 'use_dynamic_color';
+  static const _kTrueBlack = 'true_black_theme';
 
   Future<void> load() async {
     final rows = await _db.select(_db.appSettings).get();
@@ -90,6 +92,16 @@ class SettingsRepository extends ChangeNotifier {
         _ => ThemeMode.system,
       };
   Future<void> setThemeMode(ThemeMode mode) => _set(_kThemeMode, mode.name);
+
+  // --- THM-01: Material You wallpaper colours (device-local, U-12) ---
+  bool get useDynamicColor => (_get(_kUseDynamicColor) ?? 'false') == 'true';
+  Future<void> setUseDynamicColor(bool value) =>
+      _set(_kUseDynamicColor, value.toString());
+
+  // --- THM-02: true-black dark surfaces for AMOLED panels ---
+  bool get trueBlackTheme => (_get(_kTrueBlack) ?? 'false') == 'true';
+  Future<void> setTrueBlackTheme(bool value) =>
+      _set(_kTrueBlack, value.toString());
 
   // --- V2: markdown preview toggle ---
   bool get markdownPreview => (_get(_kMarkdownPreview) ?? 'true') == 'true';

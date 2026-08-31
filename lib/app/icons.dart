@@ -60,6 +60,12 @@ class AppIcons {
   static const IconData lockOpen = Icons.lock_open_outlined;
   static const IconData keepAwake = Icons.wb_sunny_outlined;
   static const IconData keepAwakeOff = Icons.brightness_2_outlined;
+
+  // --- v1.2 polish: motion, Material You, undo (MOT/THM/UND) ---
+  static const IconData undo = Icons.undo_outlined;
+  static const IconData redo = Icons.redo_outlined;
+  static const IconData wallpaper = Icons.wallpaper;
+  static const IconData trueBlack = Icons.bedtime_outlined;
 }
 
 /// A-03/A-04/A-07: an icon button that cannot be created without an

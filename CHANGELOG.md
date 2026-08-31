@@ -11,6 +11,29 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 ### Added
 - Placeholder for the `v1.1` line: restore-from-backup.
 
+**v1.2 polish: motion, Material You, undo safety**
+
+- Shared-element transition: opening a card flies it into the item screen and
+  back on pop, skipped for reduced-motion users (MOT-01). Card view switches
+  (Grid / List / Compact / Rows) cross-fade, and colour changes on cards and
+  the item background animate instead of snapping (MOT-02, MOT-03).
+- Optional Material You wallpaper colours on Android 12+ (Appearance →
+  "Wallpaper colours"), with the built-in palette as fallback everywhere
+  else, and an optional true-black dark theme for AMOLED panels (THM-01,
+  THM-02).
+- Undo safety net: Edit Mode gains undo/redo controls backed by the platform
+  undo stack (IME and Ctrl+Z agree with the buttons), and every pin, colour,
+  archive, trash and restore — single or multi-select — confirms with a
+  five-second Undo snackbar that reverts to the previous value (UND-01,
+  UND-02).
+
+### Fixed
+- The session auto-lock timer now resets on in-app activity — taps, drags,
+  scrolls, physical key presses and editor typing keep the session open, so
+  notes no longer lock while you are actively working in them (PIN-05). The
+  lock still fires after real inactivity, and a backgrounded app still locks
+  once its deadline passes.
+
 ## [1.0.0] - 2026-08-27
 
 First public release. Ships for **Windows x64** and **Android**; iOS, macOS and

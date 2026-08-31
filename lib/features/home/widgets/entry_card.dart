@@ -9,6 +9,11 @@ import '../../../data/models/enums.dart';
 import '../../../data/repositories/entry_repository.dart';
 import '../../../core/color_x.dart';
 
+/// MOT-01: the shared-element tag that flies a card into the open item (and
+/// back on pop). Both sides must agree, so the tag lives here, next to the
+/// card that originates the flight.
+String entryHeroTag(String entryId) => 'entry-card-$entryId';
+
 /// U-14: one note or list on the home/archive/trash grid.
 ///
 /// Grid / List / Compact are cards. Rows is a dense inbox-style line.
@@ -70,13 +75,18 @@ class _EntryCardState extends State<EntryCard> {
         : color.foreground(brightness);
 
     if (widget.viewMode == CardViewMode.rows) {
-      return _row(context, theme, brightness, color);
+      return _maybeHero(context, _row(context, theme, brightness, color));
     }
 
     final compact = widget.viewMode == CardViewMode.compact;
     final isList = widget.viewMode == CardViewMode.list;
 
-    return MouseRegion(
+    // MOT-03: colour changes cross-fade instead of snapping.
+    final motionDuration = MediaQuery.of(context).disableAnimations
+        ? Duration.zero
+        : const Duration(milliseconds: 250);
+
+    final card = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Semantics(
@@ -84,9 +94,15 @@ class _EntryCardState extends State<EntryCard> {
         label: widget.bundle.entry.title.isEmpty
             ? 'Untitled ${widget.bundle.isChecklist ? "list" : "note"}'
             : widget.bundle.entry.title,
-        child: Material(
-          color: surface,
-          borderRadius: BorderRadius.circular(14),
+        child: TweenAnimationBuilder<Color?>(
+          // MOT-03: the card's surface cross-fades when its colour changes.
+          tween: ColorTween(end: surface),
+          duration: motionDuration,
+          builder: (context, animatedSurface, child) => Material(
+            color: animatedSurface,
+            borderRadius: BorderRadius.circular(14),
+            child: child,
+          ),
           child: InkWell(
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
@@ -121,6 +137,15 @@ class _EntryCardState extends State<EntryCard> {
         ),
       ),
     );
+
+    return _maybeHero(context, card);
+  }
+
+  /// MOT-01: flies this card into the opened item screen (and back on pop).
+  /// Skipped when the user asked the OS for reduced motion.
+  Widget _maybeHero(BuildContext context, Widget child) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return Hero(tag: entryHeroTag(widget.bundle.entry.id), child: child);
   }
 
   Widget _row(

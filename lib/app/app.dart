@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +6,7 @@ import '../data/models/enums.dart';
 import '../data/repositories/settings_repository.dart';
 import '../features/home/create_flow.dart';
 import '../features/home/home_page.dart';
+import '../features/lock/lock_activity_observer.dart';
 import '../features/lock/lock_lifecycle.dart';
 import '../features/settings/settings_page.dart';
 import '../state/app_state.dart';
@@ -29,13 +31,39 @@ class NoteNestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsRepository>();
 
-    return MaterialApp(
-      title: 'NoteNest',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: settings.themeMode, // SET-14
-      home: const LockLifecycle(child: AppShell()),
+    // THM-01: Material You wallpaper colours where the OS offers them
+    // (Android 12+); the built-in palette everywhere else and whenever the
+    // user opts out. THM-02: true-black dark surfaces, opt-in.
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        final ThemeData lightTheme;
+        final ThemeData darkTheme;
+        if (settings.useDynamicColor &&
+            lightDynamic != null &&
+            darkDynamic != null) {
+          lightTheme = AppTheme.fromScheme(lightDynamic.harmonized());
+          darkTheme = AppTheme.fromScheme(
+            darkDynamic.harmonized(),
+            trueBlack: settings.trueBlackTheme,
+          );
+        } else {
+          lightTheme = AppTheme.light();
+          darkTheme = AppTheme.dark(trueBlack: settings.trueBlackTheme);
+        }
+
+        return MaterialApp(
+          title: 'NoteNest',
+          debugShowCheckedModeBanner: false,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: settings.themeMode, // SET-14
+          home: const LockLifecycle(child: AppShell()),
+          // PIN-05: above the Navigator, so activity on pushed pages (editor,
+          // settings, dialogs) resets the auto-lock timer too.
+          builder: (context, child) =>
+              LockActivityObserver(child: child ?? const SizedBox.shrink()),
+        );
+      },
     );
   }
 }

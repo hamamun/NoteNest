@@ -14,7 +14,9 @@ import 'pin_lock_policy.dart';
 /// Unlock state lives only in memory. Killing the process therefore locks at
 /// once, which is the "close the app → lock" rule. A phone left in the
 /// background keeps this object alive and stays unlocked until [autoLock]
-/// elapses.
+/// elapses. While the app is actively used, [noteActivity] keeps pushing that
+/// moment back (PIN-05), so the lock fires after real inactivity, never
+/// mid-edit.
 class PinLockController extends ChangeNotifier {
   PinLockController({
     SettingsRepository? settings,
@@ -185,6 +187,19 @@ class PinLockController extends ChangeNotifier {
 
   /// Closing the window / killing the session locks immediately.
   void onSessionEnded() => lockNow();
+
+  /// PIN-05: reports in-app user activity (tap, drag, scroll, key press, or
+  /// editor typing) so the auto-lock countdown measures idleness, not time
+  /// since unlock. Pushes the deadline a full [autoLock] away from *now*.
+  ///
+  /// A no-op while locked: activity must never unlock anything, and it must
+  /// never arm a timer behind the user's back. Note that [onResumed] is
+  /// deliberately NOT activity — returning to a backgrounded app after the
+  /// deadline must still lock (PIN-04).
+  void noteActivity() {
+    if (!_notesUnlocked && !_listsUnlocked) return;
+    _armTimer();
+  }
 
   void _unlockForTarget() {
     _notesUnlocked = _target.locksNotes;

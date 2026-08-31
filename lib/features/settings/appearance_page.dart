@@ -131,6 +131,32 @@ class AppearancePage extends StatelessWidget {
                 showSelectedIcon: false,
               ),
 
+              // THM-01: wallpaper-derived palette where the OS offers one.
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(AppIcons.wallpaper),
+                title: const Text('Wallpaper colours (Material You)'),
+                subtitle: const Text(
+                  'Theme the app from your Android 12+ wallpaper. '
+                  'Other devices keep the built-in palette.',
+                ),
+                value: settings.useDynamicColor,
+                onChanged: settings.setUseDynamicColor,
+              ),
+
+              // THM-02: for AMOLED panels — darker darks, less battery.
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(AppIcons.trueBlack),
+                title: const Text('True black dark theme'),
+                subtitle: const Text(
+                  'Pure black backgrounds in dark mode. Easiest on AMOLED '
+                  'screens and on battery.',
+                ),
+                value: settings.trueBlackTheme,
+                onChanged: settings.setTrueBlackTheme,
+              ),
+
               const Divider(height: 44),
 
               Text('Card view', style: theme.textTheme.titleMedium),
