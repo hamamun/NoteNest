@@ -39,11 +39,6 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
 
-  /// F-02: caches the per-workspace count streams so the "All" chip does not
-  /// re-query (and flicker) on every rebuild.
-  final Map<Workspace, Stream<({int notes, int lists})>> _typeCountStreams =
-      <Workspace, Stream<({int notes, int lists})>>{};
-
   @override
   void dispose() {
     _debounce?.cancel();
@@ -381,9 +376,7 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 avatar: _lockAvatar(context, filter),
-                label: filter == EntryFilter.all
-                    ? _allChipLabel(context, state)
-                    : Text(filter.label),
+                label: _chipLabel(context, state, filter),
                 selected: state.filter == filter,
                 onSelected: (_) => context.read<AppState>().setFilter(filter),
                 showCheckmark: false,
@@ -401,39 +394,58 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// The "All" chip shows a plain count of visible items, with no badge or
-  /// background — just a muted number after the label. On Home, PIN-locked
-  /// note/list sections are excluded so the number always matches what is on
-  /// screen; Archive and Trash are never locked, so they show their totals.
-  Widget _allChipLabel(BuildContext context, AppState state) {
+  /// Every filter chip (All / Notes / Lists) shows the count of visible
+  /// items as a muted number after its label — no badge, no background, so
+  /// the row reads like "All 12 · Notes 8 · Lists 4".
+  ///
+  /// All three chips share one repository stream per workspace (cached in the
+  /// repository, see [EntryRepository.watchTypeCounts]), so no Drift query is
+  /// ever listened to twice and the numbers never go stale or flicker.
+  ///
+  /// On Home, PIN-locked note/list sections are excluded so the number always
+  /// matches what is on screen; when a section is fully gated its chip shows
+  /// the plain label with no number (no misleading "0" behind the PIN gate).
+  /// Archive and Trash are never locked and always show their totals.
+  Widget _chipLabel(BuildContext context, AppState state, EntryFilter filter) {
+    final label = Text(filter.label);
     final services = context.read<Services>();
     final lock = context.read<PinLockController>();
     final onHome = state.workspace == Workspace.home;
-    final stream = _typeCountStreams.putIfAbsent(
-      state.workspace,
-      () => services.entries.watchTypeCounts(state.workspace),
-    );
+    final stream = services.entries.watchTypeCounts(state.workspace);
 
     return StreamBuilder<({int notes, int lists})>(
       stream: stream,
       builder: (context, snapshot) {
         final data = snapshot.data;
-        if (data == null) return const Text('All');
+        // Keep the plain label until the very first count arrives, so the
+        // filter row is stable on first build.
+        if (data == null) return label;
 
-        final showNotes = onHome ? !lock.shouldHideNotes : true;
-        final showLists = onHome ? !lock.shouldHideLists : true;
-        // Fully gated (both locked, nothing visible yet): no number, so a
-        // misleading "0" never shows before the PIN gate is passed.
-        if (!showNotes && !showLists) return const Text('All');
+        final int count;
+        if (onHome) {
+          count = switch (filter) {
+            EntryFilter.all =>
+              (lock.shouldHideNotes ? 0 : data.notes) +
+                  (lock.shouldHideLists ? 0 : data.lists),
+            EntryFilter.notes => lock.shouldHideNotes ? -1 : data.notes,
+            EntryFilter.lists => lock.shouldHideLists ? -1 : data.lists,
+          };
+          // -1 marks a fully gated section: plain label, no number.
+          if (count < 0) return label;
+        } else {
+          count = switch (filter) {
+            EntryFilter.all => data.notes + data.lists,
+            EntryFilter.notes => data.notes,
+            EntryFilter.lists => data.lists,
+          };
+        }
 
-        final total =
-            (showNotes ? data.notes : 0) + (showLists ? data.lists : 0);
         return Text.rich(
           TextSpan(
-            text: 'All',
+            text: filter.label,
             children: [
               TextSpan(
-                text: '  $total',
+                text: '  $count',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
