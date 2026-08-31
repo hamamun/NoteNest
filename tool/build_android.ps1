@@ -25,11 +25,12 @@ try { flutter --version | Out-Null } catch { Die "Flutter is not installed or no
 
 Step "Generating Android platform folder"
 # --platforms=android only so we do not touch Windows files.
+# Note: flutter create has no -y/--yes flag; the command is already
+# non-interactive, so passing -y aborts the whole script.
 flutter create . `
   --project-name notenest `
   --org com.notenest `
-  --platforms=android `
-  -y
+  --platforms=android
 
 Step "Restoring NoteNest source over the generated templates"
 try {

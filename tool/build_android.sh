@@ -26,12 +26,12 @@ flutter --version || die "Flutter is not installed or not on PATH."
 
 step "Generating Android platform folder"
 # `--platforms=android` only — no Windows files touched.
-# `-y` accepts the optional Windows desktop dialog automatically.
+# Note: flutter create has no -y/--yes flag; the command is already
+# non-interactive, so passing -y aborts the whole script.
 flutter create . \
   --project-name notenest \
   --org com.notenest \
-  --platforms=android \
-  -y
+  --platforms=android
 
 step "Restoring NoteNest source over the generated templates"
 git checkout -- lib pubspec.yaml analysis_options.yaml test 2>/dev/null \
