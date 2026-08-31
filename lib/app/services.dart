@@ -149,7 +149,7 @@ class Services {
       final info = await PackageInfo.fromPlatform();
       return '${info.version}+${info.buildNumber}';
     } catch (_) {
-      return '1.0.0+1';
+      return '1.5.0+2';
     }
   }
 

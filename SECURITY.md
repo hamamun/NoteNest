@@ -19,7 +19,7 @@ token, or PIN.** Use one of these instead:
 
 ### What to include
 
-- NoteNest version (Settings → About, e.g. `1.0.0+1`) and platform
+- NoteNest version (Settings → About, e.g. `1.5.0+2`) and platform
 - The affected file or subsystem (`lib/features/sync/sync_engine.dart`, …)
 - Steps to reproduce, and what an attacker gains
 - A proof of concept is helpful; a working exploit is not required, and please

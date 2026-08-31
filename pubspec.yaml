@@ -4,7 +4,7 @@ description: >-
   that syncs through a private GitHub repository. No account, no server,
   no telemetry.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.5.0+2
 repository: https://github.com/hamamun/NoteNest
 homepage: https://github.com/hamamun/NoteNest#readme
 issue_tracker: https://github.com/hamamun/NoteNest/issues

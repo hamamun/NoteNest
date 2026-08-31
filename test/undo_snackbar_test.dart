@@ -18,6 +18,7 @@ void main() {
                   message: 'Pinned',
                   onUndo: () async => undone += 1,
                 ),
+                child: const Text('Pin'),
               ),
             ),
           ),
@@ -49,6 +50,7 @@ void main() {
                       message: 'Pinned',
                       onUndo: () async {},
                     ),
+                    child: const Text('Pin'),
                   ),
                   FilledButton(
                     onPressed: () => showUndoSnackBar(
@@ -56,6 +58,7 @@ void main() {
                       message: 'Archived',
                       onUndo: () async {},
                     ),
+                    child: const Text('Archive'),
                   ),
                 ],
               ),
