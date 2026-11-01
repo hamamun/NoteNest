@@ -16,8 +16,16 @@ class AppLog {
   static final RegExp _tokenPattern = RegExp(
     r'(gh[pousr]_[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,})',
   );
+  /// `Authorization: Bearer <credential>`, `Authorization: Basic <blob>`,
+  /// `bearer <credential>` and `token=<credential>`.
+  ///
+  /// The optional scheme word matters: with the older
+  /// `(authorization|bearer|token)\s*[:=]\s*\S+` pattern the match stopped at
+  /// "Bearer", leaving the credential itself in the log line — the exact leak
+  /// SEC-08 exists to prevent. The scheme is consumed here, so the whole
+  /// header collapses to `Authorization: ***REDACTED***`.
   static final RegExp _authHeader = RegExp(
-    r'(authorization|bearer|token)\s*[:=]\s*\S+',
+    r'(authorization|bearer|token)\s*[:=]?\s*(?:(?:bearer|basic|token)\s+)?\S+',
     caseSensitive: false,
   );
 

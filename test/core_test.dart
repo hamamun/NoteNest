@@ -42,6 +42,22 @@ void main() {
     test('authorization headers are redacted', () {
       final out = AppLog.redact('Authorization: Bearer secretvalue123');
       expect(out, isNot(contains('secretvalue123')));
+      expect(out, contains('REDACTED'));
+    });
+
+    test('the credential after a scheme word is redacted too', () {
+      // Regression: the pattern used to stop at "Bearer", so the token that
+      // followed it survived in the log line.
+      expect(
+        AppLog.redact('Authorization: Bearer abcdef123456'),
+        isNot(contains('abcdef123456')),
+      );
+      expect(
+        AppLog.redact('Authorization: Basic dXNlcjpwYXNzd29yZA=='),
+        isNot(contains('dXNlcjpwYXNzd29yZA==')),
+      );
+      expect(AppLog.redact('bearer abcdef123456'), isNot(contains('abcdef123456')));
+      expect(AppLog.redact('token=abcdef123456'), isNot(contains('abcdef123456')));
     });
 
     test('ordinary text is untouched', () {

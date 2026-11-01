@@ -31,7 +31,9 @@ void main() {
       createdAt: now,
       updatedAt: now + 1000,
       contentUpdatedAt: now + 1000,
-      metadataUpdatedAt: now + 500,
+      // Second-aligned on purpose: the front matter stores ISO-8601 to the
+      // second (AppTime.toIso), so a sub-second component cannot round-trip.
+      metadataUpdatedAt: now + 2000,
       archivedAt: location == EntryLocation.archive ? now : null,
       trashedAt: location == EntryLocation.trash ? now : null,
       imageIds: const ['img-1', 'img-2'],
@@ -58,6 +60,14 @@ void main() {
       expect(decoded.contentUpdatedAt, original.contentUpdatedAt);
       expect(decoded.metadataUpdatedAt, original.metadataUpdatedAt);
       expect(decoded.imageIds, ['img-1', 'img-2']);
+    });
+
+    test('timestamps round-trip at the precision the format stores', () {
+      // AppTime.toIso writes `2026-08-23T10:20:00Z` — whole seconds. Anything
+      // finer is deliberately dropped rather than silently changing the file
+      // format every time the platform clock gains a millisecond.
+      final ms = DateTime.utc(2026, 8, 23, 10, 20, 0, 500).millisecondsSinceEpoch;
+      expect(AppTime.parseIso(AppTime.toIso(ms)), ms - 500);
     });
 
     test('archive state survives', () {

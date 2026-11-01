@@ -62,7 +62,9 @@ class _ItemPageState extends State<ItemPage> {
   bool _dirty = false;
   bool _keepAwake = false;
 
-  bool get _isMobile => !kIsWeb && Platform.isAndroid;
+  /// Phones and tablets only: the platform where View Mode offers
+  /// keep-screen-awake and where the app bar is too narrow for every action.
+  bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
   @override
   void initState() {
@@ -312,17 +314,20 @@ class _ItemPageState extends State<ItemPage> {
             ),
           ),
 
-        // CP-03: Copy All, View Mode only.
-        if (!_editing)
+        // CP-03: Copy All, View Mode only. A phone only has room for three
+        // icons beside the Edit button, and a list already spends one on the
+        // checkbox toggle plus one on keep-awake — so for lists Copy All
+        // moves into ⋮ instead of overflowing the bar.
+        if (!_editing && !(_isMobile && bundle.isChecklist))
           AppIconButton(
             icon: AppIcons.copyAll,
             label: 'Copy all',
             onPressed: () => _copyAll(context, bundle),
           ),
 
-        // Notes have room in the bar. Lists already have the checkbox
-        // toggle, so keep-awake lives in ⋮ there to avoid overflow.
-        if (_isMobile && !_editing && !bundle.isChecklist)
+        // Keep-awake is a reading aid for phones. Notes and lists both get
+        // it in View Mode; lists keep the checkbox toggle next to it.
+        if (_isMobile && !_editing)
           AppIconButton(
             icon: _keepAwake ? AppIcons.keepAwake : AppIcons.keepAwakeOff,
             label: _keepAwake ? 'Allow screen to sleep' : 'Keep screen on',
@@ -368,6 +373,10 @@ class _ItemPageState extends State<ItemPage> {
           itemBuilder: (menuContext) {
             final location = bundle.location;
             return [
+              // CP-03: lists on a phone reach Copy All from here — the bar
+              // keeps the checkbox and keep-awake toggles instead.
+              if (!_editing && _isMobile && bundle.isChecklist)
+                const PopupMenuItem(value: 'copy', child: Text('Copy all')),
               if (!isDesktop)
                 const PopupMenuItem(value: 'color', child: Text('Change colour')),
               if (!isDesktop && _editing)
@@ -409,6 +418,8 @@ class _ItemPageState extends State<ItemPage> {
     switch (value) {
       case 'awake':
         await _toggleKeepAwake();
+      case 'copy':
+        await _copyAll(context, bundle);
       case 'color':
         await _pickColor(context, bundle, isDesktop);
       case 'image':
@@ -611,54 +622,98 @@ class _ItemPageState extends State<ItemPage> {
     final services = context.read<Services>();
     final showBoxes = bundle.entry.checkboxesVisibleInView;
 
+    // A blank line typed in Edit Mode stays a blank line in View Mode, so a
+    // paragraph break inside a list survives the trip (N-09).
+    final rows =
+        ChecklistMatcher.viewRows(body: bundle.entry.body, lines: lines);
+
+    final children = <Widget>[];
+    var index = 0;
+    for (final row in rows) {
+      if (row == null) {
+        // One typed blank line = one empty line of content height.
+        children.add(
+          SizedBox(height: style.fontSize! * (style.height ?? 1.2)),
+        );
+        continue;
+      }
+      children.add(
+        _checklistRow(
+          context: context,
+          bundle: bundle,
+          services: services,
+          settings: settings,
+          style: style,
+          line: row,
+          index: index,
+          showBoxes: showBoxes,
+        ),
+      );
+      index++;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < lines.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (showBoxes)
-                  // SET-11: the checkbox owns its own tap area, separate from
-                  // the text, so tapping a link never toggles the item.
-                  Semantics(
-                    checked: lines[i].checked,
-                    label: lines[i].text,
-                    child: Checkbox(
-                      value: lines[i].checked,
-                      onChanged: (value) => services.entries.setLineChecked(
-                        bundle.entry.id,
-                        i,
-                        value ?? false,
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.padded,
-                    ),
-                  )
-                else
-                  const SizedBox(width: 4),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: showBoxes ? 12 : 4, bottom: 4),
-                    child: LinkifiedText(
-                      text: lines[i].text,
-                      clickable: settings.clickableUrls,
-                      style: style.copyWith(
-                        decoration: showBoxes && lines[i].checked
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                        color: showBoxes && lines[i].checked
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : null,
-                      ),
-                    ),
-                  ),
+      children: children,
+    );
+  }
+
+  /// One item of a checklist in View Mode. [index] is the item's position in
+  /// the stored line list — blank separators are not counted.
+  Widget _checklistRow({
+    required BuildContext context,
+    required EntryBundle bundle,
+    required Services services,
+    required SettingsRepository settings,
+    required TextStyle style,
+    required ChecklistLine line,
+    required int index,
+    required bool showBoxes,
+  }) {
+    final done = showBoxes && line.checked;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showBoxes)
+            // SET-11: the checkbox owns its own tap area, separate from
+            // the text, so tapping a link never toggles the item.
+            Semantics(
+              checked: line.checked,
+              label: line.text,
+              child: Checkbox(
+                value: line.checked,
+                onChanged: (value) => services.entries.setLineChecked(
+                  bundle.entry.id,
+                  index,
+                  value ?? false,
                 ),
-              ],
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+              ),
+            )
+          else
+            const SizedBox(width: 4),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: showBoxes ? 12 : 4, bottom: 4),
+              child: LinkifiedText(
+                text: line.text,
+                clickable: settings.clickableUrls,
+                style: style.copyWith(
+                  decoration: done
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  color: done
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : null,
+                ),
+              ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 

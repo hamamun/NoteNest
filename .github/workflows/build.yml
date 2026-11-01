@@ -25,7 +25,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: "3.24.5"
+  # NoteNest supports "any Flutter 3.22 or newer", so CI tracks the latest
+  # stable instead of pinning a patch version. The old pin (3.24.5) made the
+  # build fail outright: pub resolves `dynamic_color` 1.9.x, which calls
+  # Color.toARGB32, and that only exists from Flutter 3.27.
+  FLUTTER_CHANNEL: stable
 
 jobs:
   version:
@@ -50,8 +54,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Generate the Windows runner, codegen, launcher icon
@@ -104,8 +107,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Generate the Android runner and codegen
@@ -160,12 +162,22 @@ jobs:
           merge-multiple: true
 
       - name: Package the portable Windows build
+        # upload-artifact flattens the runner's Release/ folder into the
+        # artifact root, so do not rely on it still being called "Release":
+        # everything that is not the Android APK and not the Inno Setup
+        # installer is the portable Windows build, and it only works as a
+        # zip — the .exe alone is missing its DLLs and data/ folder.
         run: |
           cd assets
-          if [ -d Release ]; then
-            zip -qr "NoteNest-${{ needs.version.outputs.version }}-windows-x64.zip" Release
-            rm -rf Release
-          fi
+          mkdir -p portable
+          for f in *; do
+            case "$f" in
+              *.apk|NoteNest-Setup-*.exe|portable) continue ;;
+            esac
+            mv "$f" portable/
+          done
+          zip -qr "NoteNest-${{ needs.version.outputs.version }}-windows-x64.zip" portable
+          rm -rf portable
           ls -la
 
       - name: Fill in the version placeholders

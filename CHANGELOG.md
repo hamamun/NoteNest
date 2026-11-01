@@ -10,8 +10,36 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 
 ### Added
 - Placeholder for the `v1.6` line: restore-from-backup.
+- GitHub Actions pipelines are switched on for the first time: `ci.yml`
+  (analyze + the test suites on Linux and Windows) and `build.yml`, which
+  builds the Windows `.exe`, the Inno Setup installer and the Android `.apk` on
+  a `v*` tag or on a manual run, and attaches them to the run as downloadable
+  artifacts. Turning them on immediately caught a token leak (see Fixed) and
+  two tests that had never passed on CI.
+
+### Changed
+- CI follows the latest stable Flutter channel instead of pinning 3.24.5. The
+  old pin could not compile at all: `dynamic_color` 1.9 needs
+  `Color.toARGB32`, which arrived in Flutter 3.27.
+- `flutter analyze` runs with `--no-fatal-infos`, so info-level lints are
+  advisory (like the format job) while errors and warnings still fail the
+  pipeline.
+- The draft release now always ships the portable Windows build as a single
+  zip. `upload-artifact` flattens the runner's `Release/` folder, so the old
+  `if [ -d Release ]` check silently skipped the zip and left the bare `.exe`
+  (useless on its own — it needs its DLLs and `data/` beside it) as a release
+  asset.
 
 ### Fixed
+- **Security:** `AppLog.redact` leaked the credential in an
+  `Authorization: Bearer <token>` log line. The pattern stopped at the scheme
+  word, so the token itself survived redaction (SEC-08).
+- Paragraph breaks no longer disappear in View Mode. A blank line typed
+  between two lines is kept as a full empty line for notes (Markdown preview)
+  and as a real gap for lists, instead of collapsing into one block of text.
+- Keep-screen-awake is reachable in View Mode on a phone for lists as well as
+  notes: the sun/moon icon now sits in the app bar for both, and a list's
+  Copy All action moves into the ⋮ menu to make room for it.
 - Windows installer script compiles again: the uninstaller message in
   `tool/windows_installer.iss` used an invalid implicit string concatenation.
 - The same uninstaller message now points at the real data directory

@@ -187,4 +187,54 @@ void main() {
       expect(ChecklistMatcher.toTxtExport(sample), '[ ] Rice\n[x] Milk');
     });
   });
+
+  group('view rows keep paragraph breaks', () {
+    List<ChecklistLine?> rows(String body) => ChecklistMatcher.viewRows(
+          body: body,
+          lines: ChecklistMatcher.reconcile(previous: lines([]), body: body),
+        );
+
+    test('a blank line between items survives as a gap', () {
+      expect(rows('Milk\n\nRice'), [
+        const ChecklistLine('Milk', false),
+        null,
+        const ChecklistLine('Rice', false),
+      ]);
+    });
+
+    test('consecutive blank lines are all kept', () {
+      expect(rows('A\n\n\nB'), [
+        const ChecklistLine('A', false),
+        null,
+        null,
+        const ChecklistLine('B', false),
+      ]);
+    });
+
+    test('leading and trailing gaps are trimmed', () {
+      expect(rows('\n\nA\nB\n\n'), [
+        const ChecklistLine('A', false),
+        const ChecklistLine('B', false),
+      ]);
+    });
+
+    test('a gapless body is just the items', () {
+      expect(rows('A\nB'), [
+        const ChecklistLine('A', false),
+        const ChecklistLine('B', false),
+      ]);
+    });
+
+    test('an empty body has no rows', () {
+      expect(rows(''), isEmpty);
+    });
+
+    test('stored items return unchanged when body and lines disagree', () {
+      final stored = lines([('A', true), ('B', false)]);
+      expect(ChecklistMatcher.viewRows(body: 'A\n\nC\n\nD', lines: stored), [
+        const ChecklistLine('A', true),
+        const ChecklistLine('B', false),
+      ]);
+    });
+  });
 }
