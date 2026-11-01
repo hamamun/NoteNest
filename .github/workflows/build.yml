@@ -38,7 +38,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: ver
         run: |
           v=$(grep -E '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*//' | cut -d+ -f1)
@@ -50,21 +50,29 @@ jobs:
     needs: version
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
+      # Both platform folders are generated, not just windows/: the
+      # flutter_launcher_icons config in pubspec.yaml targets android *and*
+      # windows, and the tool aborts ("Could not open file,
+      # android/app/src/main/AndroidManifest.xml") when one of them is missing.
       - name: Generate the Windows runner, codegen, launcher icon
         shell: pwsh
         run: |
-          flutter create . --project-name notenest --org com.notenest --platforms=windows
+          flutter create . --project-name notenest --org com.notenest --platforms=windows,android
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git checkout -- lib pubspec.yaml analysis_options.yaml test
           flutter pub get
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dart run build_runner build --delete-conflicting-outputs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dart run flutter_launcher_icons
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item assets/icon/app_icon.ico windows/runner/resources/app_icon.ico -Force
 
       - name: Build release
@@ -98,9 +106,9 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -110,9 +118,11 @@ jobs:
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
+      # windows/ is generated too: flutter_launcher_icons is configured for
+      # both platforms and fails without it.
       - name: Generate the Android runner and codegen
         run: |
-          flutter create . --project-name notenest --org com.notenest --platforms=android
+          flutter create . --project-name notenest --org com.notenest --platforms=windows,android
           git checkout -- lib pubspec.yaml analysis_options.yaml test
           flutter pub get
           dart run build_runner build --delete-conflicting-outputs
@@ -128,10 +138,18 @@ jobs:
           M=android/app/src/main/AndroidManifest.xml
           test -f "$M" || { echo "manifest missing: $M" >&2; exit 1; }
           if ! grep -q 'android.permission.INTERNET' "$M"; then
-            sed -i '0,/<manifest/s//<manifest\n    <uses-permission android:name="android.permission.INTERNET" \/>/' "$M"
+            # Replace the whole <manifest ...> start tag and append the child
+            # *after* its closing '>'. The previous pattern matched bare
+            # "<manifest" and injected the element inside the start tag, which
+            # produced invalid XML: flutter_launcher_icons failed to parse it
+            # and `flutter build apk` died with the same parse error.
+            sed -i 's|<manifest\([^>]*\)>|<manifest\1>\n    <uses-permission android:name="android.permission.INTERNET" />|' "$M"
           fi
-          grep -n 'android.permission.INTERNET' "$M" \
+          grep -n 'android.permission.INTERNET' "$M" | head -n 3 \
             || { echo "ERROR: INTERNET permission missing from $M" >&2; exit 1; }
+          # A corrupted manifest only surfaces later, as a Gradle parse error,
+          # so fail here instead.
+          python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1]); print('manifest is valid XML')" "$M"
 
       - name: Build release APK
         run: flutter build apk --release
@@ -151,7 +169,7 @@ jobs:
       github.event.inputs.publish_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: .github/RELEASE_TEMPLATE.md
           sparse-checkout-cone-mode: false
