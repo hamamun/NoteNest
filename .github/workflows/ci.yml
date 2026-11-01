@@ -40,7 +40,15 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Analyze
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze > analyze.log 2>&1
+          status=$?
+          if [ $status -ne 0 ]; then
+            head -n 60 analyze.log | sed 's/^/::error::/'
+            exit $status
+          fi
+          cat analyze.log
 
       - name: Verify generated code is up to date
         run: git diff --exit-code lib/data/db/ || (echo "::error::Commit the regenerated drift code"; exit 1)
@@ -67,7 +75,15 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Unit tests
-        run: flutter test --reporter expanded
+        run: |
+          set +e
+          flutter test --reporter expanded > test.log 2>&1
+          status=$?
+          if [ $status -ne 0 ]; then
+            grep -nE "Error|error:|Failed|\[E\]|Expected|Actual" test.log | head -n 50 | sed 's/^/::error::/'
+            exit $status
+          fi
+          tail -n 5 test.log
 
   format:
     name: Format check
