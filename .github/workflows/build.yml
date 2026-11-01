@@ -25,7 +25,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: "3.24.5"
+  # NoteNest supports "any Flutter 3.22 or newer", so CI tracks the latest
+  # stable instead of pinning a patch version. The old pin (3.24.5) made the
+  # build fail outright: pub resolves `dynamic_color` 1.9.x, which calls
+  # Color.toARGB32, and that only exists from Flutter 3.27.
+  FLUTTER_CHANNEL: stable
 
 jobs:
   version:
@@ -50,8 +54,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Generate the Windows runner, codegen, launcher icon
@@ -104,8 +107,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Generate the Android runner and codegen

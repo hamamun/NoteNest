@@ -27,7 +27,9 @@ void main() {
     );
 
     await tester.tap(find.byType(FilledButton));
-    await tester.pump(); // SnackBar enters.
+    // Let the entrance animation finish: the action sits off-screen while the
+    // SnackBar is still sliding in, so an immediate tap misses it.
+    await tester.pumpAndSettle();
     expect(find.text('Pinned'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
 
