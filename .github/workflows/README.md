@@ -12,7 +12,7 @@ Runs on every push to `main`, on every pull request into `main`, and on demand.
 
 | Job | Runner | What it proves |
 |-----|--------|----------------|
-| `analyze` | ubuntu-latest | `flutter analyze` is clean, and the generated Drift code still matches the schema (a `build_runner` run must produce no diff) |
+| `analyze` | ubuntu-latest | `flutter analyze --no-fatal-infos` is clean (info-level lints are advisory, like the format job; errors and warnings still fail), and the generated Drift code still matches the schema (a `build_runner` run must produce no diff) |
 | `test` | ubuntu-latest **and** windows-latest | the test suites pass on both platforms — the sync decision table and the file codec are the ones worth proving on Windows |
 | `format` | ubuntu-latest | `dart format` suggestions. Advisory by design: an unformatted pull request should get a hint, not a blocked pipeline |
 
@@ -25,6 +25,16 @@ part of CI for analyze/test.
 Runs on `v*` tags and on `workflow_dispatch` (Actions → **Build** → **Run
 workflow**). A manual run is the easiest way to get a fresh `.exe` and `.apk`
 without installing anything locally.
+
+> `workflow_dispatch` only appears once the workflow file is on the default
+> branch, so the Run-workflow button for `build.yml` exists after this lands on
+> `main`. Pushing a `v*` tag works the same way and additionally fills in the
+> draft release.
+
+Both workflows follow the **latest stable** Flutter channel rather than a
+pinned patch: `pubspec.lock` is git-ignored, so `pub` resolves current package
+versions, and a pinned SDK eventually stops being able to compile them (a pinned
+3.24.5 could not build `dynamic_color` 1.9, which needs Flutter 3.27+).
 
 | Job | Output |
 |-----|--------|
