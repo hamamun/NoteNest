@@ -81,6 +81,9 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Unit tests
+        # git-bash on Windows too, so the reporting block below behaves the same
+        # on both runners.
+        shell: bash
         run: |
           set +e
           flutter test --reporter expanded > test.log 2>&1
