@@ -71,6 +71,47 @@ class ChecklistMatcher {
       .where((line) => line.trim().isNotEmpty)
       .toList(growable: false);
 
+  /// The rows View Mode should paint for a checklist.
+  ///
+  /// N-09 still decides *what* becomes an item — a blank line is never an
+  /// item and never carries a checkbox. But the *gaps* are kept: a blank line
+  /// typed between two items in Edit Mode comes back as a paragraph break in
+  /// View Mode, so "line one / Enter / Enter / line two" reads the same in
+  /// both modes instead of collapsing into a wall of items.
+  ///
+  /// A `null` entry means "blank line the user typed". Leading and trailing
+  /// blank lines are dropped, because they are invisible in the editor too.
+  ///
+  /// [lines] is the stored checklist, which is exactly `splitLines(body)`.
+  /// When the two disagree (legacy rows, or a save still in flight) the items
+  /// are returned without gaps rather than guessing a layout.
+  static List<ChecklistLine?> viewRows({
+    required String body,
+    required List<ChecklistLine> lines,
+  }) {
+    if (lines.isEmpty) return const [];
+
+    final raw = body.replaceAll('\r\n', '\n').split('\n');
+    final nonEmpty = raw.where((line) => line.trim().isNotEmpty).length;
+    if (nonEmpty != lines.length) {
+      return List<ChecklistLine?>.of(lines, growable: false);
+    }
+
+    final rows = <ChecklistLine?>[];
+    var index = 0;
+    for (final line in raw) {
+      if (line.trim().isEmpty) {
+        // Skip padding before the first item and after the last one.
+        if (index == 0 || index >= lines.length) continue;
+        rows.add(null);
+        continue;
+      }
+      rows.add(lines[index]);
+      index++;
+    }
+    return List<ChecklistLine?>.unmodifiable(rows);
+  }
+
   /// Renders lines back into the plain multiline editor text (N-08).
   static String toBody(List<ChecklistLine> lines) =>
       lines.map((line) => line.text).join('\n');

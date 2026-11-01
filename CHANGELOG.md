@@ -12,6 +12,12 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 - Placeholder for the `v1.6` line: restore-from-backup.
 
 ### Fixed
+- Paragraph breaks no longer disappear in View Mode. A blank line typed
+  between two lines is kept as a full empty line for notes (Markdown preview)
+  and as a real gap for lists, instead of collapsing into one block of text.
+- Keep-screen-awake is reachable in View Mode on a phone for lists as well as
+  notes: the sun/moon icon now sits in the app bar for both, and a list's
+  Copy All action moves into the ⋮ menu to make room for it.
 - Windows installer script compiles again: the uninstaller message in
   `tool/windows_installer.iss` used an invalid implicit string concatenation.
 - The same uninstaller message now points at the real data directory

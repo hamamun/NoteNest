@@ -137,9 +137,13 @@ class SimpleMarkdown extends StatelessWidget {
         continue;
       }
 
-      // Blank line.
+      // Blank line. A paragraph break gets a full empty line's worth of
+      // space — the same height the editor gives it — so "text, Enter,
+      // Enter, text" reads identically in Edit and View Mode.
       if (trimmed.isEmpty) {
-        blocks.add(SizedBox(height: baseStyle.fontSize! * 0.6));
+        blocks.add(SizedBox(
+          height: baseStyle.fontSize! * (baseStyle.height ?? 1.2),
+        ));
         i++;
         continue;
       }
