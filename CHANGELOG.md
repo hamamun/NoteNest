@@ -10,6 +10,17 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 
 ### Added
 - Placeholder for the `v1.6` line: restore-from-backup.
+- GitHub Actions pipelines are switched on: `ci.yml` (analyze + the test suites
+  on Linux and Windows) and `build.yml`, which builds the Windows `.exe` and
+  the Inno Setup installer plus the Android `.apk` on a `v*` tag or on a manual
+  run, and attaches them to the run as downloadable artifacts.
+
+### Changed
+- The draft release now always ships the portable Windows build as a single
+  zip. `upload-artifact` flattens the runner's `Release/` folder, so the old
+  `if [ -d Release ]` check silently skipped the zip and left the bare `.exe`
+  (useless on its own — it needs its DLLs and `data/` beside it) as a release
+  asset.
 
 ### Fixed
 - Paragraph breaks no longer disappear in View Mode. A blank line typed

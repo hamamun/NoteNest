@@ -247,19 +247,22 @@ flutter test
 
 ### Continuous integration
 
-The workflow definitions live in [`tool/ci/`](/tool/ci) rather than
-`.github/workflows/`, because GitHub only accepts new workflow files from an
-account with the `workflows` permission. Two commands turn them on:
+Two workflows live in [`.github/workflows/`](/.github/workflows):
 
-```bash
-mkdir -p .github/workflows
-git mv tool/ci/ci.yml tool/ci/build.yml .github/workflows/
-git commit -m "ci: enable the CI and release-build workflows"
-```
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | push / PR to `main`, manual | `flutter analyze`, the test suites on Linux **and** Windows, advisory `dart format` |
+| `build.yml` | `v*` tag, manual | builds the Windows `.exe` (+ Inno Setup installer) and the Android `.apk`, uploads both as artifacts, and can open a **draft** release |
 
-[`tool/ci/README.md`](/tool/ci/README.md) documents what each job proves and
-why the release build produces **unsigned** artifacts on purpose. The CI badge
-at the top of this file starts reporting once those files are in place.
+To get installers without a local Flutter install: **Actions → Build → Run
+workflow**. When it finishes, download `windows-installer`,
+`windows-portable` and `android-apk` from the run's *Artifacts* section. No
+secrets or signing keys are needed — the artifacts are deliberately
+**unsigned**, which is why SmartScreen and Android's sideload warning appear
+once (see [Privacy](#privacy)).
+
+[`.github/workflows/README.md`](/.github/workflows/README.md) documents what
+each job proves and why the build stays a draft and unsigned.
 
 ---
 

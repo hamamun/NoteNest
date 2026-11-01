@@ -160,12 +160,22 @@ jobs:
           merge-multiple: true
 
       - name: Package the portable Windows build
+        # upload-artifact flattens the runner's Release/ folder into the
+        # artifact root, so do not rely on it still being called "Release":
+        # everything that is not the Android APK and not the Inno Setup
+        # installer is the portable Windows build, and it only works as a
+        # zip — the .exe alone is missing its DLLs and data/ folder.
         run: |
           cd assets
-          if [ -d Release ]; then
-            zip -qr "NoteNest-${{ needs.version.outputs.version }}-windows-x64.zip" Release
-            rm -rf Release
-          fi
+          mkdir -p portable
+          for f in *; do
+            case "$f" in
+              *.apk|NoteNest-Setup-*.exe|portable) continue ;;
+            esac
+            mv "$f" portable/
+          done
+          zip -qr "NoteNest-${{ needs.version.outputs.version }}-windows-x64.zip" portable
+          rm -rf portable
           ls -la
 
       - name: Fill in the version placeholders
