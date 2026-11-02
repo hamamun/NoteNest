@@ -10,6 +10,13 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 
 ### Added
 - Placeholder for the `v1.6` line: restore-from-backup.
+
+## [1.5.1] - 2026-11-02
+
+Conflict copies can now be resolved in the app, and the project builds both
+installers on GitHub Actions.
+
+### Added
 - **Conflict resolution in the app.** A conflict copy now explains itself at
   the top of the item screen and offers the three decisions that actually
   exist: **Keep both** (the copy becomes an ordinary note), **Replace
