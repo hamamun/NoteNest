@@ -10,6 +10,16 @@ Version numbers are published in `pubspec.yaml` as `MAJOR.MINOR.PATCH+BUILD`.
 
 ### Added
 - Placeholder for the `v1.6` line: restore-from-backup.
+- **Conflict resolution in the app.** A conflict copy now explains itself at
+  the top of the item screen and offers the three decisions that actually
+  exist: **Keep both** (the copy becomes an ordinary note), **Replace
+  original** (this text wins, the copy goes to Trash, one Undo away) and
+  **Discard copy** (undoable Trash), plus **Open original** to read the other
+  device's version. Home also shows a “N conflict copies need a look” bar with
+  a **Review** button that opens the newest one. Until now the app created the
+  copy, labelled it on the card, and stopped there — `clearConflictFlag()` and
+  `watchConflictCount()` existed in the repository but nothing in the UI ever
+  called them.
 - GitHub Actions pipelines are switched on for the first time: `ci.yml`
   (analyze + the test suites on Linux and Windows) and `build.yml`, which
   builds the Windows `.exe`, the Inno Setup installer and the Android `.apk` on

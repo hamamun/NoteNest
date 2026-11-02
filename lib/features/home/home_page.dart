@@ -9,6 +9,7 @@ import '../../app/icons.dart';
 import '../../app/services.dart';
 import '../../app/sync_button.dart';
 import '../../app/undo_snackbar.dart';
+import '../../core/color_x.dart';
 import '../../data/models/enums.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/settings_repository.dart';
@@ -69,6 +70,8 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           _filterRow(context, state),
+          if (state.workspace == Workspace.home && !state.selectionMode)
+            _conflictBanner(context, services),
           if (state.workspace == Workspace.trash) _trashBanner(context),
           Expanded(
             child: StreamBuilder<List<EntryBundle>>(
@@ -468,6 +471,77 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  /// X-09: the one place a conflict is announced without opening anything.
+  ///
+  /// It only ever shows a count and a Review button — the decisions themselves
+  /// live in the conflict copy, where both versions can be read side by side.
+  Widget _conflictBanner(BuildContext context, Services services) {
+    // A fresh stream per build on purpose: Drift's watchSingle() streams are
+    // single-subscription, so caching one and re-listening after this banner
+    // leaves the tree (Archive/Trash) would throw "already listened to".
+    return StreamBuilder<int>(
+      stream: services.entries.watchConflictCount(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme;
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+          padding: const EdgeInsets.only(left: 14, right: 6),
+          decoration: BoxDecoration(
+            color: scheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                AppIcons.conflict,
+                size: 16,
+                color: scheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  count == 1
+                      ? '1 conflict copy needs a look'
+                      : '$count conflict copies need a look',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSecondaryContainer.fade(0.95),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _reviewConflicts(context),
+                child: const Text('Review'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Opens the newest unresolved conflict, which then explains itself.
+  Future<void> _reviewConflicts(BuildContext context) async {
+    final entries = context.read<Services>().entries;
+    final conflicts = await entries.conflictsForReview();
+    if (!mounted) return;
+    if (conflicts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No conflicts left to review.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ItemPage(entryId: conflicts.first.entry.id),
+      ),
     );
   }
 
