@@ -9,6 +9,7 @@ name: Build
 
 on:
   push:
+    branches: ["arena/133131cc-notenest"]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
