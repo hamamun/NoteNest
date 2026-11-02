@@ -24,6 +24,7 @@ import '../export/export_dialog.dart';
 import '../home/widgets/entry_card.dart';
 import '../lock/pin_lock_controller.dart';
 import '../lock/pin_pad.dart';
+import 'widgets/conflict_banner.dart';
 import 'widgets/image_strip.dart';
 import 'widgets/linkified_text.dart';
 import 'widgets/simple_markdown.dart';
@@ -209,6 +210,13 @@ class _ItemPageState extends State<ItemPage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
                   children: [
+                    // X-09: a conflict copy explains itself, and offers the
+                    // three ways to finish the job. View Mode only — Edit Mode
+                    // stays a plain editor.
+                    if (!_editing &&
+                        bundle.entry.syncStatus ==
+                            SyncStatus.conflictReview.value)
+                      _conflictBanner(context, bundle, services),
                     _title(bundle),
                     const SizedBox(height: 10),
                     ImageStrip(
@@ -497,6 +505,112 @@ class _ItemPageState extends State<ItemPage> {
   // ---------------------------------------------------------------------
   // Content
   // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // X-09: conflict resolution
+  // ---------------------------------------------------------------------
+
+  /// The panel is rebuilt from the *original* entry's stream, so the title it
+  /// quotes and the "Open original" button always match reality.
+  Widget _conflictBanner(
+    BuildContext context,
+    EntryBundle bundle,
+    Services services,
+  ) {
+    final originalId = bundle.entry.conflictOfId;
+    if (originalId == null) {
+      // Flagged without a link (older copies): still let the user close it out.
+      return ConflictBanner(
+        originalTitle: null,
+        onKeepBoth: () => _keepBothCopies(bundle),
+        onDiscard: () => _discardConflictCopy(context, bundle),
+      );
+    }
+
+    return StreamBuilder<EntryBundle?>(
+      stream: services.entries.watchEntry(originalId),
+      builder: (context, snapshot) {
+        final original = snapshot.data;
+        return ConflictBanner(
+          originalTitle: original?.entry.title,
+          onOpenOriginal: original == null
+              ? null
+              : () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ItemPage(entryId: original.entry.id),
+                    ),
+                  ),
+          onKeepBoth: () => _keepBothCopies(bundle),
+          onReplaceOriginal: original == null
+              ? null
+              : () => _replaceOriginal(context, bundle, original),
+          onDiscard: () => _discardConflictCopy(context, bundle),
+        );
+      },
+    );
+  }
+
+  /// "Keep both": the copy stops being a conflict and lives on as a note.
+  Future<void> _keepBothCopies(EntryBundle bundle) async {
+    await context.read<Services>().entries.keepConflictCopy(bundle.entry.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Both copies kept — this one is a normal note now.'),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// "Replace original": this copy's text wins, the copy goes to Trash.
+  /// UND-02: the whole swap is one Undo away.
+  Future<void> _replaceOriginal(
+    BuildContext context,
+    EntryBundle copy,
+    EntryBundle original,
+  ) async {
+    final entries = context.read<Services>().entries;
+    final previousTitle = original.entry.title;
+    final previousBody = original.entry.body;
+
+    await entries.replaceOriginalWithConflict(
+      copyId: copy.entry.id,
+      originalId: original.entry.id,
+    );
+    if (!mounted) return;
+
+    // UND-02: the messenger outlives this route, so undo works after the pop.
+    showUndoSnackBar(
+      context,
+      message: 'Original replaced with this copy',
+      onUndo: () async {
+        await entries.saveContent(
+          id: original.entry.id,
+          title: previousTitle,
+          body: previousBody,
+        );
+        await entries.restoreFromTrash(copy.entry.id);
+      },
+    );
+    Navigator.of(context).pop();
+  }
+
+  /// "Discard copy": undoable — it sits in Trash until the user empties it.
+  Future<void> _discardConflictCopy(
+    BuildContext context,
+    EntryBundle bundle,
+  ) async {
+    final entries = context.read<Services>().entries;
+    await entries.discardConflictCopy(bundle.entry.id);
+    if (!mounted) return;
+
+    showUndoSnackBar(
+      context,
+      message: 'Conflict copy moved to trash',
+      onUndo: () => entries.restoreFromTrash(bundle.entry.id),
+    );
+    Navigator.of(context).pop();
+  }
 
   Widget _title(EntryBundle bundle) {
     if (_editing) {

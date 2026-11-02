@@ -688,6 +688,66 @@ class EntryRepository {
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
+  /// X-09/G-09: every conflict copy still waiting for a decision, newest
+  /// first. Feeds the "N conflict copies need a look" banner on Home.
+  Future<List<EntryBundle>> conflictsForReview() async {
+    final rows = await (_db.select(_db.entries)
+          ..where((t) =>
+              t.syncStatus.equals(SyncStatus.conflictReview.value) &
+              t.location.isNotValue(EntryLocation.deleted.value))
+          ..orderBy([
+            (t) => OrderingTerm(
+                  expression: t.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+          ]))
+        .get();
+    return _bundleAll(rows);
+  }
+
+  /// X-09: the entry a conflict copy was forked from, or null when it is gone
+  /// (deleted on the other device while the copy was in flight).
+  Future<EntryBundle?> conflictOriginalOf(String id) async {
+    final copy = await findEntry(id);
+    final originalId = copy?.entry.conflictOfId;
+    if (originalId == null) return null;
+    return findEntry(originalId);
+  }
+
+  /// X-09 "Keep both": the copy stops being a conflict and simply becomes
+  /// another note.
+  Future<void> keepConflictCopy(String id) => clearConflictFlag(id);
+
+  /// X-09 "Discard this copy": the copy goes to Trash (undoable, tombstoned —
+  /// it will not come back on the next sync).
+  Future<void> discardConflictCopy(String id) => moveToTrash(id);
+
+  /// X-09 "Replace original": the copy's text becomes the original's text,
+  /// then the copy goes to Trash. The caller keeps the previous original text
+  /// so Undo can put everything back.
+  ///
+  /// When the original is gone (deleted on the other device) there is nothing
+  /// to replace, so the copy is simply kept.
+  Future<void> replaceOriginalWithConflict({
+    required String copyId,
+    required String originalId,
+  }) async {
+    final copy = await findEntry(copyId);
+    final original = await findEntry(originalId);
+    if (copy == null) return;
+    if (original == null) {
+      await keepConflictCopy(copyId);
+      return;
+    }
+
+    await saveContent(
+      id: originalId,
+      title: copy.entry.title,
+      body: copy.entry.body,
+    );
+    await moveToTrash(copyId);
+  }
+
   // ---------------------------------------------------------------------
   // V3: local note history
   // ---------------------------------------------------------------------

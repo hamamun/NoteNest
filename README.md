@@ -73,7 +73,7 @@ That single design decision gives you five things most note apps don't:
 - **Bidirectional sync** with a private GitHub repository over the Contents API
 - **Auto-sync** on launch, when the network comes back, and every 3 minutes
   while the app is in the foreground — plus one manual tap of the cloud button
-- **Conflict-safe**: two devices editing the same note keeps *both* versions, one clearly labelled — it never silently overwrites
+- **Conflict-safe**: two devices editing the same note keeps *both* versions, one clearly labelled — it never silently overwrites. Conflict copies explain themselves when you open them and offer **Keep both**, **Replace original** or **Discard copy**, and Home shows how many are waiting
 - **Scheduled backups** (weekly/monthly) as dated `.zip` archives inside the repo, plus a manual save-to-disk
 - **Optional AES-256-GCM encrypted backups** (PBKDF2-derived key) and **optional encrypted note bodies** in the repo
 - **PDF and TXT export**, with a font slot for non-Latin scripts
